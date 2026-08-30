@@ -22,9 +22,6 @@ import {
   Search,
   X,
   Palette,
-  Send,
-  MessageSquare,
-  Calendar,
   Award,
   BarChart3
 } from 'lucide-react';
@@ -323,38 +320,20 @@ export const INITIAL_SAVED_MEALS: CustomMeal[] = [
     totalFat: 15.7,
     loggedAt: new Date().toISOString(),
     isFavorite: true
-  },
-  {
-    id: 'sample-meal-2',
-    name: 'Chicken Rice & Broccoli Plate',
-    category: 'lunch',
-    ingredients: [
-      { id: 'i-5', foodId: 'chicken-breast', name: 'Chicken Breast', grams: 180, calories: 297, protein: 55.8, carbs: 0, fat: 6.5, icon: '🍗' },
-      { id: 'i-6', foodId: 'white-rice', name: 'White Rice (Cooked)', grams: 180, calories: 234, protein: 4.9, carbs: 50.8, fat: 0.5, icon: '🍚' },
-      { id: 'i-7', foodId: 'broccoli', name: 'Broccoli', grams: 120, calories: 41, protein: 3.4, carbs: 8.4, fat: 0.5, icon: '🥦' },
-      { id: 'i-8', foodId: 'olive-oil', name: 'Olive Oil', grams: 10, calories: 88, protein: 0, carbs: 0, fat: 10.0, icon: '🫒' }
-    ],
-    totalGrams: 490,
-    totalCalories: 660,
-    totalProtein: 64.1,
-    totalCarbs: 59.2,
-    totalFat: 17.5,
-    loggedAt: new Date().toISOString(),
-    isFavorite: true
   }
 ];
 
 const STORAGE_KEYS = {
-  MEALS: 'retro_macro_meals_v9',
-  GOALS: 'retro_macro_goals_v9',
-  TEMPLATES: 'retro_macro_templates_v9',
-  STATS: 'retro_macro_stats_v9',
-  SCANLINES: 'retro_macro_scanlines_v9',
-  MUTED: 'retro_macro_muted_v9',
-  THEME: 'retro_macro_theme_v9',
-  CUSTOM_FOODS: 'retro_macro_custom_foods_v9',
-  DELETED_FOOD_IDS: 'retro_macro_deleted_ids_v9',
-  HISTORY: 'retro_macro_history_v9'
+  MEALS: 'retro_macro_meals_v10',
+  GOALS: 'retro_macro_goals_v10',
+  TEMPLATES: 'retro_macro_templates_v10',
+  STATS: 'retro_macro_stats_v10',
+  SCANLINES: 'retro_macro_scanlines_v10',
+  MUTED: 'retro_macro_muted_v10',
+  THEME: 'retro_macro_theme_v10',
+  CUSTOM_FOODS: 'retro_macro_custom_foods_v10',
+  DELETED_FOOD_IDS: 'retro_macro_deleted_ids_v10',
+  HISTORY: 'retro_macro_history_v10'
 };
 
 const DEFAULT_GOALS: DailyGoals = {
@@ -367,13 +346,13 @@ const DEFAULT_GOALS: DailyGoals = {
 const getTodayDateStr = () => new Date().toISOString().split('T')[0];
 
 const DEFAULT_STATS: UserStats = {
-  level: 3,
-  xp: 180,
-  xpToNextLevel: 300,
-  streakDays: 4,
+  level: 0,
+  xp: 0,
+  xpToNextLevel: 100,
+  streakDays: 0,
   lastActiveDate: getTodayDateStr(),
-  rankTitle: 'Elite Chef',
-  totalMealsLogged: 12
+  rankTitle: 'Novice Initiate',
+  totalMealsLogged: 0
 };
 
 export default function App() {
@@ -391,9 +370,9 @@ export default function App() {
   const [meals, setMeals] = useState<CustomMeal[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.MEALS);
-      return saved ? JSON.parse(saved) : INITIAL_SAVED_MEALS;
+      return saved ? JSON.parse(saved) : [];
     } catch {
-      return INITIAL_SAVED_MEALS;
+      return [];
     }
   });
 
@@ -532,10 +511,10 @@ export default function App() {
     setUserStats(prev => {
       let newStreak = prev.streakDays;
       if (diffDays === 1) {
-        newStreak += 1; // Consecutive day!
+        newStreak = newStreak === 0 ? 1 : newStreak + 1;
         showToast(`🔥 STREAK INCREASED! ${newStreak} Days Active!`);
       } else if (diffDays > 1) {
-        newStreak = 1; // Missed days, reset streak to 1
+        newStreak = 1;
         showToast(`⚡ Streak Reset. Welcome back on your macro quest!`);
       }
       return {
@@ -562,6 +541,7 @@ export default function App() {
       }
 
       const titles = [
+        'Novice Initiate',
         'Apprentice Cook',
         'Sous Chef',
         'Elite Chef',
@@ -570,7 +550,7 @@ export default function App() {
         'Protein Paladin',
         'Grand Guild Master'
       ];
-      const rankTitle = titles[Math.min(newLevel - 1, titles.length - 1)];
+      const rankTitle = titles[Math.min(newLevel, titles.length - 1)];
 
       return {
         ...prev,
@@ -578,7 +558,8 @@ export default function App() {
         level: newLevel,
         xpToNextLevel: newXPToNext,
         rankTitle,
-        totalMealsLogged: prev.totalMealsLogged + 1
+        totalMealsLogged: prev.totalMealsLogged + 1,
+        streakDays: prev.streakDays === 0 ? 1 : prev.streakDays
       };
     });
   };
@@ -638,7 +619,6 @@ export default function App() {
       style={{ backgroundColor: activePalette.bgMain, color: activePalette.textPrimary, fontFamily: "'VT323', monospace" }}
       className="min-h-screen flex flex-col select-none transition-colors duration-300 relative text-lg"
     >
-      {/* Genuine Arcade CRT Scanline & Pixel Fonts */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&family=VT323&display=swap');
         
@@ -678,7 +658,6 @@ export default function App() {
         .pixel-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0px 0px #000; }
       `}</style>
 
-      {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-4 right-4 z-50 bg-black text-white px-4 py-2 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-pixel text-xs flex items-center gap-2 animate-bounce">
           <Sparkles className="w-4 h-4 text-yellow-300" />
@@ -686,10 +665,8 @@ export default function App() {
         </div>
       )}
 
-      {/* CRT Scanline Overlay */}
       {scanlinesEnabled && <div className="crt-scanlines" />}
 
-      {/* Main Container Frame */}
       <div className="w-full max-w-7xl mx-auto p-2 sm:p-4 flex-1 flex flex-col">
         <div
           style={{ backgroundColor: activePalette.bgMain }}
@@ -706,7 +683,6 @@ export default function App() {
             palette={activePalette}
           />
 
-          {/* Main Action Bar */}
           <div className="px-3 sm:px-8 mb-6 flex items-center justify-between gap-4 flex-wrap">
             <button
               onClick={() => {
@@ -726,9 +702,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Main Dashboard Grid */}
           <main className="flex-1 px-2 sm:px-8 pb-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Left Column (5 Cols): Circular Visualizer & Attribute Bars */}
             <div className="lg:col-span-5 space-y-6 flex flex-col">
               <CircularGaugeSlider
                 currentCalories={currentCalories}
@@ -749,15 +723,11 @@ export default function App() {
               />
             </div>
 
-            {/* Right Column (7 Cols): Sensei AI Coach, Daily Log, History & Spellbook */}
             <div className="lg:col-span-7 space-y-6 flex flex-col">
               <SenseiCoach
                 currentCalories={currentCalories}
                 currentProtein={currentProtein}
-                currentCarbs={currentCarbs}
-                currentFat={currentFat}
                 goals={goals}
-                meals={meals}
                 palette={activePalette}
               />
               <WeeklyHistoryChart
@@ -786,7 +756,6 @@ export default function App() {
         </div>
       </div>
 
-      {/* Craft Meal & Pantry Modal */}
       <MealCreatorModal
         isOpen={isMealModalOpen}
         onClose={() => {
@@ -1030,7 +999,6 @@ function CircularGaugeSlider({
         </div>
       )}
 
-      {/* SVG Concentric Gauge */}
       <div className="relative w-64 h-64 xs:w-72 xs:h-72 sm:w-80 sm:h-80 max-w-full flex items-center justify-center my-2">
         <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
           <circle cx="50" cy="50" r="44" fill="none" stroke="#000000" strokeWidth="8.5" opacity="0.6" />
@@ -1173,27 +1141,34 @@ function MacroBreakdownBar({
 function SenseiCoach({
   currentCalories,
   currentProtein,
-  currentCarbs,
-  currentFat,
   goals,
-  meals,
   palette
 }: {
   currentCalories: number;
   currentProtein: number;
-  currentCarbs: number;
-  currentFat: number;
   goals: DailyGoals;
-  meals: CustomMeal[];
   palette: ThemePalette;
 }) {
   const [displayedText, setDisplayedText] = useState('');
   const [fullTargetText, setFullTargetText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [userQuery, setUserQuery] = useState('');
+
+  const wisdomQuotes = [
+    "🧙‍♂️ Sensei: 'To forge unbreakable strength, prioritize lean protein in every meal and maintain your daily warrior streak!'",
+    "🧙‍♂️ Sensei: 'White rice and oats provide pure mana to fuel your intense gym raids. Do not fear complex carbohydrates!'",
+    "🧙‍♂️ Sensei: 'Consistency is your greatest weapon. Logging meals daily grants monumental XP towards your physical peak!'",
+    "🧙‍♂️ Sensei: 'Hydration and rest are vital potions. Drink plenty of water and let your muscle fibers recover overnight.'",
+    "🧙‍♂️ Sensei: 'A balanced warrior balances strength, agility, and defense. Keep your proteins, carbs, and fats in harmony!'"
+  ];
+
+  const generateWisdom = () => {
+    soundManager.playBlip();
+    const randomIndex = Math.floor(Math.random() * wisdomQuotes.length);
+    setFullTargetText(wisdomQuotes[randomIndex]);
+  };
 
   useEffect(() => {
-    generateBriefing();
+    generateWisdom();
   }, []);
 
   useEffect(() => {
@@ -1212,35 +1187,6 @@ function SenseiCoach({
     }, 18);
     return () => clearInterval(interval);
   }, [fullTargetText]);
-
-  // Reliable Offline RPG Sensei Rule Generator (Prevents Astral Plane Network Connection Errors)
-  const generateLocalRpgWisdom = (query: string): string => {
-    const q = query.toLowerCase();
-    const remCal = Math.max(0, goals.calories - currentCalories);
-    const remPro = Math.max(0, goals.protein - currentProtein);
-
-    if (q.includes('dinner') || q.includes('lunch') || q.includes('eat')) {
-      if (remPro > 30) {
-        return `🧙‍♂️ Sensei: Feast on high-tier protein warrior! 200g Grilled Chicken Breast or Salmon with White Rice will grant +50g STR and ${remCal > 500 ? 'fuel your remaining calorie cap!' : 'keep calories tight!'}`;
-      } else {
-        return `🧙‍♂️ Sensei: Your protein target is well fortified! Enjoy a light bowl of veggies, sweet potatoes, and avocado for healthy DEX & DEF!`;
-      }
-    } else if (q.includes('snack') || q.includes('protein')) {
-      return `🧙‍♂️ Sensei: Consume a Whey Protein Shake with a Banana or 170g Greek Yogurt! It bestows instant +30g Protein with minimal fat consumption.`;
-    } else if (q.includes('carbs') || q.includes('energy')) {
-      return `🧙‍♂️ Sensei: Oats, sweet potatoes, and white rice provide pure mana to power your intense gym raids!`;
-    } else {
-      return `🧙‍♂️ Sensei: Stay disciplined, Warrior! You have ${remCal} kcal and ${Math.round(remPro)}g protein left to conquer today. Keep forging custom meals!`;
-    }
-  };
-
-  const askSensei = (promptText: string) => {
-    if (!promptText.trim()) return;
-    soundManager.playBlip();
-    const reply = generateLocalRpgWisdom(promptText);
-    setFullTargetText(reply);
-    setUserQuery('');
-  };
 
   const generateBriefing = () => {
     soundManager.playBlip();
@@ -1298,39 +1244,11 @@ function SenseiCoach({
             {displayedText ? (
               <span>"{displayedText}"</span>
             ) : (
-              <span className="text-slate-400 italic">"Ask me anything about your diet or request a briefing below!"</span>
+              <span className="text-slate-400 italic">"Request a briefing or wisdom below!"</span>
             )}
           </div>
         </div>
       </div>
-
-      {/* Input Form with HIGH CONTRAST Black Background & Bright Yellow Text */}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          askSensei(userQuery);
-        }}
-        className="flex gap-2 mb-3"
-      >
-        <div className="flex-1 flex items-center bg-slate-950 border-4 border-black px-3 py-1">
-          <MessageSquare className="w-4 h-4 text-amber-400 mr-2 shrink-0" />
-          <input
-            type="text"
-            placeholder="Ask Sensei (e.g. What should I eat for dinner?)"
-            value={userQuery}
-            onChange={(e) => setUserQuery(e.target.value)}
-            className="w-full bg-slate-950 text-yellow-300 font-mono text-base p-2 focus:outline-none font-bold placeholder-slate-500"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={!userQuery.trim()}
-          className="pixel-btn bg-emerald-600 text-white border-2 border-black px-4 py-2 text-[9px] font-bold flex items-center gap-1 cursor-pointer disabled:opacity-50 hover:bg-emerald-500 shrink-0"
-        >
-          <Send className="w-3.5 h-3.5" />
-          <span>ASK SENSEI</span>
-        </button>
-      </form>
 
       <div className="flex flex-wrap gap-2">
         <button
@@ -1341,7 +1259,7 @@ function SenseiCoach({
           <span>MACRO BRIEFING</span>
         </button>
         <button
-          onClick={() => askSensei("Give me high protein advice")}
+          onClick={generateWisdom}
           className="flex-1 min-w-[130px] pixel-btn bg-emerald-600 text-white border-2 border-black py-2 px-2.5 text-[9px] font-bold flex items-center justify-center gap-1.5 cursor-pointer hover:bg-emerald-500"
         >
           <Sparkles className="w-3.5 h-3.5" />
@@ -1361,7 +1279,6 @@ function WeeklyHistoryChart({
   goals: DailyGoals;
   palette: ThemePalette;
 }) {
-  // Generate last 7 days array (today + last 6 days)
   const days: { dateStr: string; dayLabel: string; record?: DailyHistoryRecord }[] = [];
   const today = new Date();
 
@@ -1400,13 +1317,11 @@ function WeeklyHistoryChart({
 
           return (
             <div key={dayItem.dateStr} className="flex flex-col items-center justify-end h-full w-full group relative">
-              {/* Tooltip on hover */}
               <div className="absolute -top-10 z-20 hidden group-hover:flex flex-col items-center bg-slate-900 border-2 border-black text-white p-1 text-[9px] font-mono whitespace-nowrap shadow-md">
                 <span>{calories} kcal</span>
                 <span className="text-emerald-400">{protein}g P</span>
               </div>
 
-              {/* Bar Fill */}
               <div className="w-full bg-slate-900 border-2 border-slate-800 h-full flex items-end">
                 <div
                   style={{ height: `${Math.max(heightPct, calories > 0 ? 8 : 0)}%` }}
@@ -1414,7 +1329,6 @@ function WeeklyHistoryChart({
                 />
               </div>
 
-              {/* Day Label */}
               <span className={`font-pixel text-[7px] sm:text-[9px] mt-2 font-bold ${idx === 6 ? 'text-yellow-300' : 'text-slate-400'}`}>
                 {dayItem.dayLabel}
               </span>
@@ -1616,7 +1530,6 @@ function MealCreatorModal({
   deletedFoodIds = [],
   onAddCustomFood,
   onDeleteFood,
-  onRestoreDefaultFoods,
   palette
 }: {
   isOpen: boolean;
@@ -1636,7 +1549,6 @@ function MealCreatorModal({
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Custom Food Form
   const [activeTab, setActiveTab] = useState<'pantry' | 'new_ingredient'>('pantry');
   const [newFoodName, setNewFoodName] = useState('');
   const [newFoodCategory, setNewFoodCategory] = useState<FoodCategory>('protein');
@@ -1802,7 +1714,6 @@ function MealCreatorModal({
             </button>
           </div>
 
-          {/* Pantry & Custom Ingredient Creation */}
           <div className="lg:col-span-5 space-y-3">
             <div className="flex items-center justify-between">
               <span className="font-pixel text-[10px] text-yellow-300 font-bold uppercase">PANTRY & CUSTOM FOODS</span>
