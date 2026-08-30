@@ -111,12 +111,12 @@ export interface CustomMeal {
   totalProtein: number;
   totalCarbs: number;
   totalFat: number;
-  loggedAt: string; // ISO String timestamp
+  loggedAt: string;
   isFavorite?: boolean;
 }
 
 export interface DailyHistoryRecord {
-  dateStr: string; // YYYY-MM-DD
+  dateStr: string;
   calories: number;
   protein: number;
   carbs: number;
@@ -136,7 +136,7 @@ export interface UserStats {
   xp: number;
   xpToNextLevel: number;
   streakDays: number;
-  lastActiveDate: string; // YYYY-MM-DD
+  lastActiveDate: string;
   rankTitle: string;
   totalMealsLogged: number;
 }
@@ -262,16 +262,6 @@ class SoundManager {
 
 const soundManager = new SoundManager();
 
-export const CATEGORY_DEFAULT_ICONS: Record<string, string> = {
-  protein: '🥩',
-  carbs: '🍚',
-  fats: '🥑',
-  veggies: '🥦',
-  dairy: '🧀',
-  other: '🥣',
-  custom: '🧪'
-};
-
 export const POPULAR_FOOD_EMOJIS = [
   '🥩', '🍗', '🍳', '🐟', '🍤', '🥛', '🧀', '🥓',
   '🍚', '🍞', '🥔', '🍠', '🍌', '🍎', '🫐', '🌾',
@@ -318,6 +308,24 @@ export const INITIAL_SAVED_MEALS: CustomMeal[] = [
     totalProtein: 45.4,
     totalCarbs: 63.4,
     totalFat: 15.7,
+    loggedAt: new Date().toISOString(),
+    isFavorite: true
+  },
+  {
+    id: 'sample-meal-2',
+    name: 'Chicken Rice & Broccoli Plate',
+    category: 'lunch',
+    ingredients: [
+      { id: 'i-5', foodId: 'chicken-breast', name: 'Chicken Breast', grams: 180, calories: 297, protein: 55.8, carbs: 0, fat: 6.5, icon: '🍗' },
+      { id: 'i-6', foodId: 'white-rice', name: 'White Rice (Cooked)', grams: 180, calories: 234, protein: 4.9, carbs: 50.8, fat: 0.5, icon: '🍚' },
+      { id: 'i-7', foodId: 'broccoli', name: 'Broccoli', grams: 120, calories: 41, protein: 3.4, carbs: 8.4, fat: 0.5, icon: '🥦' },
+      { id: 'i-8', foodId: 'olive-oil', name: 'Olive Oil', grams: 10, calories: 88, protein: 0, carbs: 0, fat: 10.0, icon: '🫒' }
+    ],
+    totalGrams: 490,
+    totalCalories: 660,
+    totalProtein: 64.1,
+    totalCarbs: 59.2,
+    totalFat: 17.5,
     loggedAt: new Date().toISOString(),
     isFavorite: true
   }
@@ -448,10 +456,8 @@ export default function App() {
     }
   });
 
-  // UI Modals
   const [isMealModalOpen, setIsMealModalOpen] = useState(false);
   const [editingMeal, setEditingMeal] = useState<CustomMeal | null>(null);
-  const [isEditingGoals, setIsEditingGoals] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -464,13 +470,11 @@ export default function App() {
     localStorage.setItem(STORAGE_KEYS.MUTED, JSON.stringify(isMuted));
   }, [isMuted]);
 
-  // Dynamic Daily Totals
   const currentCalories = meals.reduce((acc, m) => acc + m.totalCalories, 0);
   const currentProtein = meals.reduce((acc, m) => acc + m.totalProtein, 0);
   const currentCarbs = meals.reduce((acc, m) => acc + m.totalCarbs, 0);
   const currentFat = meals.reduce((acc, m) => acc + m.totalFat, 0);
 
-  // Sync today's history automatically when meals change
   useEffect(() => {
     const todayStr = getTodayDateStr();
     setHistory(prev => ({
@@ -486,7 +490,6 @@ export default function App() {
     }));
   }, [meals, currentCalories, currentProtein, currentCarbs, currentFat]);
 
-  // Persist State
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.MEALS, JSON.stringify(meals)); }, [meals]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(goals)); }, [goals]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.TEMPLATES, JSON.stringify(templates)); }, [templates]);
@@ -497,12 +500,11 @@ export default function App() {
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.DELETED_FOOD_IDS, JSON.stringify(deletedFoodIds)); }, [deletedFoodIds]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history)); }, [history]);
 
-  // Dynamic Streak Calculation
   const checkAndUpdateStreak = () => {
     const todayStr = getTodayDateStr();
     const lastActive = userStats.lastActiveDate;
 
-    if (lastActive === todayStr) return; // Already logged today
+    if (lastActive === todayStr) return;
 
     const todayDate = new Date(todayStr);
     const lastDate = new Date(lastActive);
@@ -511,11 +513,13 @@ export default function App() {
     setUserStats(prev => {
       let newStreak = prev.streakDays;
       if (diffDays === 1) {
-        newStreak = newStreak === 0 ? 1 : newStreak + 1;
+        newStreak += 1;
         showToast(`🔥 STREAK INCREASED! ${newStreak} Days Active!`);
       } else if (diffDays > 1) {
         newStreak = 1;
         showToast(`⚡ Streak Reset. Welcome back on your macro quest!`);
+      } else if (newStreak === 0 && prev.totalMealsLogged === 0) {
+        newStreak = 1;
       }
       return {
         ...prev,
@@ -558,8 +562,7 @@ export default function App() {
         level: newLevel,
         xpToNextLevel: newXPToNext,
         rankTitle,
-        totalMealsLogged: prev.totalMealsLogged + 1,
-        streakDays: prev.streakDays === 0 ? 1 : prev.streakDays
+        totalMealsLogged: prev.totalMealsLogged + 1
       };
     });
   };
@@ -581,6 +584,7 @@ export default function App() {
         if (exists) return prev;
         return [...prev, meal];
       });
+      showToast('Recipe added to Spellbook!');
     }
   };
 
@@ -709,8 +713,6 @@ export default function App() {
                 currentProtein={currentProtein}
                 goals={goals}
                 onUpdateGoals={setGoals}
-                isEditingGoals={isEditingGoals}
-                setIsEditingGoals={setIsEditingGoals}
                 palette={activePalette}
               />
               <MacroBreakdownBar
@@ -774,7 +776,6 @@ export default function App() {
             setDeletedFoodIds(prev => (prev.includes(id) ? prev : [...prev, id]));
           }
         }}
-        onRestoreDefaultFoods={() => setDeletedFoodIds([])}
         palette={activePalette}
       />
     </div>
@@ -874,18 +875,15 @@ function CircularGaugeSlider({
   currentProtein,
   goals,
   onUpdateGoals,
-  isEditingGoals,
-  setIsEditingGoals,
   palette
 }: {
   currentCalories: number;
   currentProtein: number;
   goals: DailyGoals;
   onUpdateGoals: (g: DailyGoals) => void;
-  isEditingGoals: boolean;
-  setIsEditingGoals: (b: boolean) => void;
   palette: ThemePalette;
 }) {
+  const [isEditingGoals, setIsEditingGoals] = useState(false);
   const [tempCalories, setTempCalories] = useState(goals.calories);
   const [tempProtein, setTempProtein] = useState(goals.protein);
   const [tempCarbs, setTempCarbs] = useState(goals.carbs);
@@ -1153,22 +1151,16 @@ function SenseiCoach({
   const [fullTargetText, setFullTargetText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
 
-  const wisdomQuotes = [
-    "🧙‍♂️ Sensei: 'To forge unbreakable strength, prioritize lean protein in every meal and maintain your daily warrior streak!'",
-    "🧙‍♂️ Sensei: 'White rice and oats provide pure mana to fuel your intense gym raids. Do not fear complex carbohydrates!'",
-    "🧙‍♂️ Sensei: 'Consistency is your greatest weapon. Logging meals daily grants monumental XP towards your physical peak!'",
-    "🧙‍♂️ Sensei: 'Hydration and rest are vital potions. Drink plenty of water and let your muscle fibers recover overnight.'",
-    "🧙‍♂️ Sensei: 'A balanced warrior balances strength, agility, and defense. Keep your proteins, carbs, and fats in harmony!'"
+  const wisdomList = [
+    "Feast on high-tier protein warrior! Grilled Chicken Breast or Salmon with White Rice grants maximum STR.",
+    "Consume a Whey Protein Shake with a Banana or 170g Greek Yogurt for instant protein gains.",
+    "Oats, sweet potatoes, and white rice provide pure mana to power your intense gym raids!",
+    "Consistency is the true legendary weapon. Log every meal to maintain your streak!",
+    "Balance your fats with avocados and olive oil to keep your armor defenses high!"
   ];
 
-  const generateWisdom = () => {
-    soundManager.playBlip();
-    const randomIndex = Math.floor(Math.random() * wisdomQuotes.length);
-    setFullTargetText(wisdomQuotes[randomIndex]);
-  };
-
   useEffect(() => {
-    generateWisdom();
+    generateBriefing();
   }, []);
 
   useEffect(() => {
@@ -1195,14 +1187,20 @@ function SenseiCoach({
     const proPct = goals.protein > 0 ? Math.round((currentProtein / goals.protein) * 100) : 0;
     const remainingPro = Math.max(0, goals.protein - currentProtein);
 
-    let text = `📜 Quest Briefing: You have consumed ${currentCalories} / ${goals.calories} kcal (${calPct}%). `;
-    text += `Protein is currently at ${Math.round(currentProtein)}g / ${goals.protein}g (${proPct}%). `;
+    let text = `📜 Quest Briefing: Consumed ${currentCalories} / ${goals.calories} kcal (${calPct}%). `;
+    text += `Protein at ${Math.round(currentProtein)}g / ${goals.protein}g (${proPct}%). `;
     if (remainingPro > 0) {
-      text += `Need ${Math.round(remainingPro)}g more protein and ${remainingCal} kcal to reach maximum power today!`;
+      text += `Need ${Math.round(remainingPro)}g more protein and ${remainingCal} kcal today!`;
     } else {
-      text += `✨ Victory! Your daily protein target is completely conquered!`;
+      text += `✨ Victory! Daily protein target completely conquered!`;
     }
     setFullTargetText(text);
+  };
+
+  const getSenseiWisdom = () => {
+    soundManager.playBlip();
+    const randomTip = wisdomList[Math.floor(Math.random() * wisdomList.length)];
+    setFullTargetText(`🧙‍♂️ Sensei Wisdom: "${randomTip}"`);
   };
 
   return (
@@ -1244,7 +1242,7 @@ function SenseiCoach({
             {displayedText ? (
               <span>"{displayedText}"</span>
             ) : (
-              <span className="text-slate-400 italic">"Request a briefing or wisdom below!"</span>
+              <span className="text-slate-400 italic">"Consult the scrolls below for your daily quest briefing!"</span>
             )}
           </div>
         </div>
@@ -1253,14 +1251,14 @@ function SenseiCoach({
       <div className="flex flex-wrap gap-2">
         <button
           onClick={generateBriefing}
-          className="flex-1 min-w-[130px] pixel-btn bg-pink-600 text-white border-2 border-black py-2 px-2.5 text-[9px] font-bold flex items-center justify-center gap-1.5 cursor-pointer hover:bg-pink-500"
+          className="flex-1 min-w-[130px] pixel-btn bg-pink-600 text-white border-2 border-black py-2.5 px-2.5 text-[9px] font-bold flex items-center justify-center gap-1.5 cursor-pointer hover:bg-pink-500"
         >
           <Scroll className="w-3.5 h-3.5" />
           <span>MACRO BRIEFING</span>
         </button>
         <button
-          onClick={generateWisdom}
-          className="flex-1 min-w-[130px] pixel-btn bg-emerald-600 text-white border-2 border-black py-2 px-2.5 text-[9px] font-bold flex items-center justify-center gap-1.5 cursor-pointer hover:bg-emerald-500"
+          onClick={getSenseiWisdom}
+          className="flex-1 min-w-[130px] pixel-btn bg-emerald-600 text-white border-2 border-black py-2.5 px-2.5 text-[9px] font-bold flex items-center justify-center gap-1.5 cursor-pointer hover:bg-emerald-500"
         >
           <Sparkles className="w-3.5 h-3.5" />
           <span>SENSEI WISDOM</span>
@@ -1482,7 +1480,7 @@ function SavedMealTemplates({
 
       {templates.length === 0 ? (
         <div className="p-6 bg-black border-4 border-black text-center text-slate-400 font-mono text-sm">
-          No saved meal recipes yet. Check "Save as Reusable Recipe" when crafting a custom meal!
+          No saved meal recipes yet. Check "Save Recipe to Spellbook" when crafting a custom meal!
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1540,13 +1538,12 @@ function MealCreatorModal({
   deletedFoodIds?: string[];
   onAddCustomFood: (food: FoodItem) => void;
   onDeleteFood: (id: string, isCustom?: boolean) => void;
-  onRestoreDefaultFoods?: () => void;
   palette: ThemePalette;
 }) {
   const [mealName, setMealName] = useState(initialMeal?.name || '');
   const [category, setCategory] = useState<MealTimeSlot>(initialMeal?.category || 'lunch');
   const [ingredients, setIngredients] = useState<MealIngredient[]>(initialMeal?.ingredients || []);
-  const [saveAsTemplate, setSaveAsTemplate] = useState(false);
+  const [saveAsTemplate, setSaveAsTemplate] = useState(initialMeal?.isFavorite || false);
   const [searchQuery, setSearchQuery] = useState('');
   
   const [activeTab, setActiveTab] = useState<'pantry' | 'new_ingredient'>('pantry');
@@ -1557,6 +1554,15 @@ function MealCreatorModal({
   const [newFoodProtein, setNewFoodProtein] = useState<number | ''>(20);
   const [newFoodCarbs, setNewFoodCarbs] = useState<number | ''>(5);
   const [newFoodFat, setNewFoodFat] = useState<number | ''>(3);
+
+  useEffect(() => {
+    if (isOpen) {
+      setMealName(initialMeal?.name || '');
+      setCategory(initialMeal?.category || 'lunch');
+      setIngredients(initialMeal?.ingredients || []);
+      setSaveAsTemplate(initialMeal?.isFavorite || false);
+    }
+  }, [isOpen, initialMeal]);
 
   if (!isOpen) return null;
 
@@ -1673,6 +1679,19 @@ function MealCreatorModal({
                 />
               </div>
 
+              <div className="flex items-center justify-between bg-black border-2 border-black p-2.5">
+                <label className="flex items-center gap-2 cursor-pointer font-pixel text-[10px] text-yellow-300 font-bold">
+                  <input
+                    type="checkbox"
+                    checked={saveAsTemplate}
+                    onChange={(e) => setSaveAsTemplate(e.target.checked)}
+                    className="w-4 h-4 accent-emerald-500 cursor-pointer"
+                  />
+                  <span>SAVE RECIPE TO SPELLBOOK</span>
+                </label>
+                <span className="font-retro text-xs text-slate-400">(Reusable 1-click template)</span>
+              </div>
+
               <div className="grid grid-cols-3 gap-2 pt-1">
                 <div className="bg-black p-2 text-center border-2 border-black">
                   <div className="text-[10px] uppercase text-emerald-400 font-pixel font-bold">Protein</div>
@@ -1694,7 +1713,7 @@ function MealCreatorModal({
                 <span className="font-pixel text-xs text-yellow-300 font-bold">RECIPE INGREDIENTS ({ingredients.length})</span>
                 <span className="font-retro text-lg text-rose-400 font-bold">{totalCalories} kcal Total</span>
               </div>
-              <div className="space-y-2 max-h-[180px] overflow-y-auto">
+              <div className="space-y-2 max-h-[160px] overflow-y-auto">
                 {ingredients.map(ing => (
                   <div key={ing.id} className="p-2 bg-slate-900 border-2 border-black flex items-center justify-between">
                     <span className="font-mono text-sm text-white font-bold">{ing.icon} {ing.name} ({ing.grams}g)</span>
