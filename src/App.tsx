@@ -1,6 +1,51 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
+import {
+  Flame,
+  Volume2,
+  VolumeX,
+  Monitor,
+  Sparkles,
+  Bot,
+  Scroll,
+  Utensils,
+  RefreshCw,
+  Settings2,
+  Check,
+  Zap,
+  Plus,
+  Trash2,
+  Edit3,
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  ChefHat,
+  Search,
+  X,
+  Palette,
+  Award,
+  BarChart3
+} from 'lucide-react';
 
-const THEME_PALETTES: Record<string, Record<string, string>> = {
+export type FoodCategory = 'protein' | 'carbs' | 'fats' | 'veggies' | 'dairy' | 'custom' | 'other';
+export type MealTimeSlot = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'potion';
+export type RetroTheme = 'blue' | 'pink';
+
+export interface ThemePalette {
+  bgMain: string;
+  panelBg: string;
+  headerBg: string;
+  subpanelBg: string;
+  borderSubtle: string;
+  textPrimary: string;
+  textMuted: string;
+  accentPink: string;
+  accentGreen: string;
+  accentCyan: string;
+  accentYellow: string;
+  accentOrange: string;
+}
+
+export const THEME_PALETTES: Record<RetroTheme, ThemePalette> = {
   blue: {
     bgMain: '#12101e',
     panelBg: '#16213e',
@@ -8,6 +53,7 @@ const THEME_PALETTES: Record<string, Record<string, string>> = {
     subpanelBg: '#0a1128',
     borderSubtle: '#0f3460',
     textPrimary: '#f0f0f0',
+    textMuted: '#94a3b8',
     accentPink: '#e94560',
     accentGreen: '#4ecca3',
     accentCyan: '#38bdf8',
@@ -21,26 +67,79 @@ const THEME_PALETTES: Record<string, Record<string, string>> = {
     subpanelBg: '#1e0b1d',
     borderSubtle: '#5a2055',
     textPrimary: '#fff0f6',
+    textMuted: '#e4a7d6',
     accentPink: '#ff3377',
     accentGreen: '#4ecca3',
     accentCyan: '#38bdf8',
     accentYellow: '#facc15',
     accentOrange: '#fb923c'
-  },
-  emerald: {
-    bgMain: '#081c15',
-    panelBg: '#1b4332',
-    headerBg: '#2d6a4f',
-    subpanelBg: '#040f0c',
-    borderSubtle: '#40916c',
-    textPrimary: '#d8f3dc',
-    accentPink: '#ff758f',
-    accentGreen: '#52b788',
-    accentCyan: '#74c69d',
-    accentYellow: '#ffb703',
-    accentOrange: '#fb8500'
   }
 };
+
+export interface FoodItem {
+  id: string;
+  name: string;
+  category: FoodCategory;
+  defaultGrams: number;
+  caloriesPer100g: number;
+  proteinPer100g: number;
+  carbsPer100g: number;
+  fatPer100g: number;
+  icon: string;
+  isCustom?: boolean;
+}
+
+export interface MealIngredient {
+  id: string;
+  foodId?: string;
+  name: string;
+  grams: number;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  icon?: string;
+}
+
+export interface CustomMeal {
+  id: string;
+  name: string;
+  category: MealTimeSlot;
+  ingredients: MealIngredient[];
+  totalGrams: number;
+  totalCalories: number;
+  totalProtein: number;
+  totalCarbs: number;
+  totalFat: number;
+  loggedAt: string;
+  isFavorite?: boolean;
+}
+
+export interface DailyHistoryRecord {
+  dateStr: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  mealCount: number;
+}
+
+export interface DailyGoals {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
+export interface UserStats {
+  level: number;
+  xp: number;
+  xpToNextLevel: number;
+  streakDays: number;
+  lastActiveDate: string;
+  rankTitle: string;
+  totalMealsLogged: number;
+}
 
 class SoundManager {
   private ctx: AudioContext | null = null;
@@ -48,7 +147,7 @@ class SoundManager {
 
   private initCtx() {
     if (!this.ctx) {
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (AudioCtx) this.ctx = new AudioCtx();
     }
     if (this.ctx && this.ctx.state === 'suspended') {
@@ -56,7 +155,7 @@ class SoundManager {
     }
   }
 
-  playBlip() {
+  public playBlip() {
     if (this.muted) return;
     try {
       this.initCtx();
@@ -75,7 +174,7 @@ class SoundManager {
     } catch {}
   }
 
-  playEat() {
+  public playEat() {
     if (this.muted) return;
     try {
       this.initCtx();
@@ -96,7 +195,7 @@ class SoundManager {
     } catch {}
   }
 
-  playCoin() {
+  public playCoin() {
     if (this.muted) return;
     try {
       this.initCtx();
@@ -116,7 +215,7 @@ class SoundManager {
     } catch {}
   }
 
-  playLevelUp() {
+  public playLevelUp() {
     if (this.muted) return;
     try {
       this.initCtx();
@@ -140,7 +239,7 @@ class SoundManager {
     } catch {}
   }
 
-  playTrash() {
+  public playTrash() {
     if (this.muted) return;
     try {
       this.initCtx();
@@ -163,7 +262,7 @@ class SoundManager {
 
 const soundManager = new SoundManager();
 
-const POPULAR_FOOD_EMOJIS = [
+export const POPULAR_FOOD_EMOJIS = [
   '🥩', '🍗', '🍳', '🐟', '🍤', '🥛', '🧀', '🥓',
   '🍚', '🍞', '🥔', '🍠', '🍌', '🍎', '🫐', '🌾',
   '🥑', '🧈', '🥜', '🌰', '🥦', '🥬', '🥕', '🥒',
@@ -171,7 +270,7 @@ const POPULAR_FOOD_EMOJIS = [
   '🥞', '🧇', '🍦', '🍩', '🍫', '🧃', '🫒', '🥣'
 ];
 
-const DEFAULT_FOOD_ITEMS = [
+export const DEFAULT_FOOD_ITEMS: FoodItem[] = [
   { id: 'chicken-breast', name: 'Chicken Breast', category: 'protein', defaultGrams: 150, caloriesPer100g: 165, proteinPer100g: 31, carbsPer100g: 0, fatPer100g: 3.6, icon: '🍗' },
   { id: 'ground-beef', name: 'Ground Beef (90/10)', category: 'protein', defaultGrams: 150, caloriesPer100g: 215, proteinPer100g: 26, carbsPer100g: 0, fatPer100g: 12, icon: '🥩' },
   { id: 'beef-steak', name: 'Beef Steak', category: 'protein', defaultGrams: 200, caloriesPer100g: 240, proteinPer100g: 27, carbsPer100g: 0, fatPer100g: 14, icon: '🥩' },
@@ -193,7 +292,7 @@ const DEFAULT_FOOD_ITEMS = [
   { id: 'spinach', name: 'Spinach', category: 'veggies', defaultGrams: 80, caloriesPer100g: 23, proteinPer100g: 2.9, carbsPer100g: 3.6, fatPer100g: 0.4, icon: '🥬' }
 ];
 
-const INITIAL_SAVED_MEALS = [
+export const INITIAL_SAVED_MEALS: CustomMeal[] = [
   {
     id: 'sample-meal-1',
     name: 'Oatmeal & Protein Breakfast',
@@ -233,214 +332,137 @@ const INITIAL_SAVED_MEALS = [
 ];
 
 const STORAGE_KEYS = {
-  MEALS: 'retro_macro_meals_v12',
-  GOALS: 'retro_macro_goals_v12',
-  TEMPLATES: 'retro_macro_templates_v12',
-  STATS: 'retro_macro_stats_v12',
-  SCANLINES: 'retro_macro_scanlines_v12',
-  MUTED: 'retro_macro_muted_v12',
-  THEME: 'retro_macro_theme_v12',
-  CUSTOM_FOODS: 'retro_macro_custom_foods_v12',
-  DELETED_FOOD_IDS: 'retro_macro_deleted_ids_v12',
-  HISTORY: 'retro_macro_history_v12'
+  MEALS: 'retro_macro_meals_v10',
+  GOALS: 'retro_macro_goals_v10',
+  TEMPLATES: 'retro_macro_templates_v10',
+  STATS: 'retro_macro_stats_v10',
+  SCANLINES: 'retro_macro_scanlines_v10',
+  MUTED: 'retro_macro_muted_v10',
+  THEME: 'retro_macro_theme_v10',
+  CUSTOM_FOODS: 'retro_macro_custom_foods_v10',
+  DELETED_FOOD_IDS: 'retro_macro_deleted_ids_v10',
+  HISTORY: 'retro_macro_history_v10'
 };
 
-const DEFAULT_GOALS = { calories: 2400, protein: 160, carbs: 250, fat: 70 };
+const DEFAULT_GOALS: DailyGoals = {
+  calories: 2400,
+  protein: 160,
+  carbs: 250,
+  fat: 70
+};
+
 const getTodayDateStr = () => new Date().toISOString().split('T')[0];
 
-async function queryGeminiSensei(userQuery: string, currentCalories: number, currentProtein: number, goals: { calories: number; protein: number }) {
-  const systemPrompt = `You are Sensei, an 8-bit retro RPG fitness and nutrition coach. Give short, punchy, fun RPG-themed advice (under 60 words). Use retro terms like HP, STR, Mana, Quests, and Boss Battles.`;
-  const prompt = `Current status: Consumed ${Math.round(currentCalories)}/${goals.calories} kcal, ${Math.round(currentProtein)}g/${goals.protein}g protein. User question/request: "${userQuery}"`;
-  
-  const apiKey = "";
-  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-
-  try {
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        systemInstruction: { parts: [{ text: systemPrompt }] }
-      })
-    });
-    const data = await response.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (text) return text;
-    throw new Error("No text response");
-  } catch {
-    return `⚔️ Sensei says: "Focus on hitting your daily ${goals.protein}g protein target with chicken, eggs, or whey to conquer today's quest!"`;
-  }
-}
-
-// Icons
-const IconFlame = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor"><path d="M12 23c-4.97 0-9-3.582-9-8 0-4 3-7.5 5-11 2 3.5 3 4.5 4 4.5 1.5 0 2-1 1.5-3 3 2.5 7.5 7.5 7.5 10.5 0 3.866-4.03 7-9 7z"/></svg>
-);
-const IconVolume2 = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/></svg>
-);
-const IconVolumeX = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6"/></svg>
-);
-const IconMonitor = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-);
-const IconSparkles = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} fill="currentColor" viewBox="0 0 24 24"><path d="M12 0l2.5 8.5L23 11l-8.5 2.5L12 22l-2.5-8.5L1 11l8.5-2.5z"/></svg>
-);
-const IconBot = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4M8 16h0M16 16h0"/></svg>
-);
-const IconScroll = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.3-2-3c-.7-1.7-2-3-4-3H5C3.3 4 2 5.3 2 7v10c0 1.7 1.3 3 3 3h12c1.7 0 3-1.3 3-3z"/></svg>
-);
-const IconUtensils = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M18 2v20M18 8h3M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2M7 2v20"/></svg>
-);
-const IconRefreshCw = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
-);
-const IconSettings2 = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M20 7h-9M14 17H5M5 7h2M19 17h2M7 5v4M14 15v4"/></svg>
-);
-const IconCheck = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
-);
-const IconZap = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} fill="currentColor" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-);
-const IconPlus = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-);
-const IconMinus = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M5 12h14"/></svg>
-);
-const IconTrash2 = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6"/></svg>
-);
-const IconEdit3 = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-);
-const IconChevronDown = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
-);
-const IconChevronUp = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6"/></svg>
-);
-const IconCopy = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-);
-const IconChefHat = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M6 13.8a4.5 4.5 0 112.61-8.2A5 5 0 0118 7a4.5 4.5 0 011.39 8.8V19a2 2 0 01-2 2H6.61A2 2 0 014.6 19v-5.2zM6 17h12"/></svg>
-);
-const IconSearch = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-);
-const IconX = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
-);
-const IconPalette = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.92 0 1.7-.75 1.7-1.7 0-.42-.16-.81-.43-1.1-.28-.3-.43-.7-.43-1.12 0-.92.75-1.68 1.68-1.68H16c3.3 0 6-2.7 6-6 0-4.7-4.5-8.5-10-8.5z"/></svg>
-);
-const IconAward = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="7"/><path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12"/></svg>
-);
-const IconBarChart3 = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 3v18h18M18 17V9M13 17V5M8 17v-3"/></svg>
-);
-const IconCalculator = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="14"/><line x1="12" y1="14" x2="12" y2="14"/><line x1="8" y1="14" x2="8" y2="14"/><line x1="16" y1="18" x2="16" y2="18"/><line x1="12" y1="18" x2="12" y2="18"/><line x1="8" y1="18" x2="8" y2="18"/><line x1="16" y1="10" x2="16" y2="10"/><line x1="12" y1="10" x2="10"/><line x1="8" y1="10" x2="8" y2="10"/></svg>
-);
-const IconSend = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-);
+const DEFAULT_STATS: UserStats = {
+  level: 0,
+  xp: 0,
+  xpToNextLevel: 100,
+  streakDays: 0,
+  lastActiveDate: getTodayDateStr(),
+  rankTitle: 'Novice Initiate',
+  totalMealsLogged: 0
+};
 
 export default function App() {
-  const [theme, setTheme] = useState(() => {
+  const [theme, setTheme] = useState<RetroTheme>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.THEME);
-      return THEME_PALETTES[saved || ''] ? saved : 'blue';
-    } catch { return 'blue'; }
-  });
-
-  const activePalette = THEME_PALETTES[theme || 'blue'] || THEME_PALETTES.blue;
-
-  const [meals, setMeals] = useState<any[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.MEALS);
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
-  });
-
-  const [goals, setGoals] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.GOALS);
-      return saved ? JSON.parse(saved) : DEFAULT_GOALS;
-    } catch { return DEFAULT_GOALS; }
-  });
-
-  const [templates, setTemplates] = useState<any[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.TEMPLATES);
-      return saved ? JSON.parse(saved) : INITIAL_SAVED_MEALS;
-    } catch { return INITIAL_SAVED_MEALS; }
-  });
-
-  const [userStats, setUserStats] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.STATS);
-      return saved ? JSON.parse(saved) : {
-        level: 1, xp: 0, xpToNextLevel: 100, streakDays: 1, lastActiveDate: getTodayDateStr(), rankTitle: 'Novice Initiate', totalMealsLogged: 0
-      };
+      return saved === 'pink' ? 'pink' : 'blue';
     } catch {
-      return { level: 1, xp: 0, xpToNextLevel: 100, streakDays: 1, lastActiveDate: getTodayDateStr(), rankTitle: 'Novice Initiate', totalMealsLogged: 0 };
+      return 'blue';
     }
   });
 
-  const [history, setHistory] = useState<Record<string, any>>(() => {
+  const activePalette = THEME_PALETTES[theme];
+
+  const [meals, setMeals] = useState<CustomMeal[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.MEALS);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [goals, setGoals] = useState<DailyGoals>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.GOALS);
+      return saved ? JSON.parse(saved) : DEFAULT_GOALS;
+    } catch {
+      return DEFAULT_GOALS;
+    }
+  });
+
+  const [templates, setTemplates] = useState<CustomMeal[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.TEMPLATES);
+      return saved ? JSON.parse(saved) : INITIAL_SAVED_MEALS;
+    } catch {
+      return INITIAL_SAVED_MEALS;
+    }
+  });
+
+  const [userStats, setUserStats] = useState<UserStats>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.STATS);
+      return saved ? JSON.parse(saved) : DEFAULT_STATS;
+    } catch {
+      return DEFAULT_STATS;
+    }
+  });
+
+  const [history, setHistory] = useState<Record<string, DailyHistoryRecord>>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.HISTORY);
       return saved ? JSON.parse(saved) : {};
-    } catch { return {}; }
+    } catch {
+      return {};
+    }
   });
 
-  const [scanlinesEnabled, setScanlinesEnabled] = useState(() => {
+  const [scanlinesEnabled, setScanlinesEnabled] = useState<boolean>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.SCANLINES);
       return saved !== null ? JSON.parse(saved) : true;
-    } catch { return true; }
+    } catch {
+      return true;
+    }
   });
 
-  const [isMuted, setIsMuted] = useState(() => {
+  const [isMuted, setIsMuted] = useState<boolean>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.MUTED);
       return saved !== null ? JSON.parse(saved) : false;
-    } catch { return false; }
+    } catch {
+      return false;
+    }
   });
 
-  const [customFoods, setCustomFoods] = useState<any[]>(() => {
+  const [customFoods, setCustomFoods] = useState<FoodItem[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.CUSTOM_FOODS);
       return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
+    } catch {
+      return [];
+    }
   });
 
   const [deletedFoodIds, setDeletedFoodIds] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.DELETED_FOOD_IDS);
       return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
+    } catch {
+      return [];
+    }
   });
 
   const [isMealModalOpen, setIsMealModalOpen] = useState(false);
-  const [isCalcModalOpen, setIsCalcModalOpen] = useState(false);
-  const [editingMeal, setEditingMeal] = useState<any>(null);
+  const [editingMeal, setEditingMeal] = useState<CustomMeal | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3200);
+    setTimeout(() => setToastMessage(null), 3000);
   };
 
   useEffect(() => {
@@ -455,7 +477,7 @@ export default function App() {
 
   useEffect(() => {
     const todayStr = getTodayDateStr();
-    setHistory((prev: Record<string, any>) => ({
+    setHistory(prev => ({
       ...prev,
       [todayStr]: {
         dateStr: todayStr,
@@ -472,7 +494,7 @@ export default function App() {
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(goals)); }, [goals]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.TEMPLATES, JSON.stringify(templates)); }, [templates]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.STATS, JSON.stringify(userStats)); }, [userStats]);
-  useEffect(() => { if (theme) localStorage.setItem(STORAGE_KEYS.THEME, theme); }, [theme]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.THEME, theme); }, [theme]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.SCANLINES, JSON.stringify(scanlinesEnabled)); }, [scanlinesEnabled]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.CUSTOM_FOODS, JSON.stringify(customFoods)); }, [customFoods]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.DELETED_FOOD_IDS, JSON.stringify(deletedFoodIds)); }, [deletedFoodIds]);
@@ -488,22 +510,28 @@ export default function App() {
     const lastDate = new Date(lastActive);
     const diffDays = Math.round((todayDate.getTime() - lastDate.getTime()) / (1000 * 3600 * 24));
 
-    setUserStats((prev: any) => {
+    setUserStats(prev => {
       let newStreak = prev.streakDays;
       if (diffDays === 1) {
         newStreak += 1;
-        showToast(`🔥 STREAK INCREASED! ${newStreak} DAYS`);
+        showToast(`🔥 STREAK INCREASED! ${newStreak} Days Active!`);
       } else if (diffDays > 1) {
         newStreak = 1;
-        showToast(`⚡ Streak Reset to Day 1! Welcome back!`);
+        showToast(`⚡ Streak Reset. Welcome back on your macro quest!`);
+      } else if (newStreak === 0 && prev.totalMealsLogged === 0) {
+        newStreak = 1;
       }
-      return { ...prev, streakDays: newStreak, lastActiveDate: todayStr };
+      return {
+        ...prev,
+        streakDays: newStreak,
+        lastActiveDate: todayStr
+      };
     });
   };
 
   const addXP = (amount: number) => {
     checkAndUpdateStreak();
-    setUserStats((prev: any) => {
+    setUserStats(prev => {
       let newXP = prev.xp + amount;
       let newLevel = prev.level;
       let newXPToNext = prev.xpToNextLevel;
@@ -513,14 +541,20 @@ export default function App() {
         newLevel += 1;
         newXPToNext = Math.round(newXPToNext * 1.4);
         soundManager.playLevelUp();
-        showToast(`LEVEL UP! Reached Level ${newLevel}! 🎉`);
+        showToast(`LEVEL UP! Reached Level ${newLevel}!`);
       }
 
       const titles = [
-        'Novice Initiate', 'Apprentice Cook', 'Sous Chef', 'Elite Chef',
-        'Master Alchemist', 'Macro Berserker', 'Protein Paladin', 'Grand Guild Master'
+        'Novice Initiate',
+        'Apprentice Cook',
+        'Sous Chef',
+        'Elite Chef',
+        'Master Alchemist',
+        'Macro Berserker',
+        'Protein Paladin',
+        'Grand Guild Master'
       ];
-      const rankTitle = titles[Math.min(newLevel - 1, titles.length - 1)];
+      const rankTitle = titles[Math.min(newLevel, titles.length - 1)];
 
       return {
         ...prev,
@@ -533,19 +567,19 @@ export default function App() {
     });
   };
 
-  const handleSaveMeal = (meal: any, saveAsTemplate: boolean) => {
+  const handleSaveMeal = (meal: CustomMeal, saveAsTemplate: boolean) => {
     if (editingMeal) {
-      setMeals((prev: any[]) => prev.map(m => (m.id === meal.id ? meal : m)));
+      setMeals(prev => prev.map(m => (m.id === meal.id ? meal : m)));
       setEditingMeal(null);
       showToast('Meal recipe updated!');
     } else {
-      setMeals((prev: any[]) => [...prev, meal]);
+      setMeals(prev => [...prev, meal]);
       addXP(50);
       showToast(`Logged "${meal.name}" (+50 XP)`);
     }
 
     if (saveAsTemplate) {
-      setTemplates((prev: any[]) => {
+      setTemplates(prev => {
         const exists = prev.some(t => t.name.toLowerCase() === meal.name.toLowerCase());
         if (exists) return prev;
         return [...prev, meal];
@@ -556,30 +590,30 @@ export default function App() {
 
   const handleDeleteMeal = (id: string) => {
     soundManager.playTrash();
-    setMeals((prev: any[]) => prev.filter(m => m.id !== id));
+    setMeals(prev => prev.filter(m => m.id !== id));
     showToast('Meal discarded.');
   };
 
-  const handleDuplicateMeal = (meal: any) => {
+  const handleDuplicateMeal = (meal: CustomMeal) => {
     soundManager.playEat();
-    const duplicated = {
+    const duplicated: CustomMeal = {
       ...meal,
       id: 'meal-' + Date.now(),
       loggedAt: new Date().toISOString()
     };
-    setMeals((prev: any[]) => [...prev, duplicated]);
+    setMeals(prev => [...prev, duplicated]);
     addXP(30);
     showToast(`Re-logged "${meal.name}" (+30 XP)`);
   };
 
-  const handleLogTemplate = (template: any) => {
+  const handleLogTemplate = (template: CustomMeal) => {
     soundManager.playEat();
-    const logged = {
+    const logged: CustomMeal = {
       ...template,
       id: 'meal-' + Date.now(),
       loggedAt: new Date().toISOString()
     };
-    setMeals((prev: any[]) => [...prev, logged]);
+    setMeals(prev => [...prev, logged]);
     addXP(40);
     showToast(`Logged "${template.name}" (+40 XP)`);
   };
@@ -587,23 +621,60 @@ export default function App() {
   return (
     <div
       style={{ backgroundColor: activePalette.bgMain, color: activePalette.textPrimary, fontFamily: "'VT323', monospace" }}
-      className="min-h-screen flex flex-col select-none transition-colors duration-300 relative text-lg sm:text-xl overflow-x-hidden"
+      className="min-h-screen flex flex-col select-none transition-colors duration-300 relative text-lg"
     >
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&family=VT323&display=swap');
+        
+        .font-pixel { font-family: 'Press Start 2P', monospace; }
+        .font-silk { font-family: 'Silkscreen', monospace; }
+        .font-retro { font-family: 'VT323', monospace; }
+
+        .crt-scanlines {
+          position: fixed;
+          top: 0; left: 0; width: 100vw; height: 100vh;
+          pointer-events: none;
+          z-index: 9999;
+          background: linear-gradient(
+            rgba(18, 16, 16, 0) 50%, 
+            rgba(0, 0, 0, 0.4) 50%
+          ), linear-gradient(
+            90deg,
+            rgba(255, 0, 0, 0.03),
+            rgba(0, 255, 0, 0.01),
+            rgba(0, 0, 255, 0.03)
+          );
+          background-size: 100% 4px, 6px 100%;
+          box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.7);
+        }
+
+        .pixel-btn {
+          font-family: 'Press Start 2P', monospace;
+          font-size: 10px;
+          line-height: 1.2;
+          border: 3px solid #000;
+          box-shadow: 3px 3px 0px 0px #000;
+          transition: transform 0.05s ease, box-shadow 0.05s ease;
+          cursor: pointer;
+          user-select: none;
+        }
+        .pixel-btn:hover { filter: brightness(1.15); }
+        .pixel-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0px 0px #000; }
+      `}</style>
+
       {toastMessage && (
-        <div className="fixed top-3 right-3 z-50 bg-black text-white px-3 py-2 border-3 sm:border-4 border-yellow-400 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-pixel text-[10px] sm:text-xs flex items-center gap-2 animate-bounce max-w-[92vw]">
-          <IconSparkles className="w-4 h-4 text-yellow-300 shrink-0" />
-          <span className="truncate">{toastMessage}</span>
+        <div className="fixed top-4 right-4 z-50 bg-black text-white px-4 py-2 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-pixel text-xs flex items-center gap-2 animate-bounce">
+          <Sparkles className="w-4 h-4 text-yellow-300" />
+          <span>{toastMessage}</span>
         </div>
       )}
 
-      {scanlinesEnabled && (
-        <div className="fixed top-0 left-0 w-screen h-screen pointer-events-none z-[9999] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.3)_50%),linear-gradient(90deg,rgba(255,0,0,0.02),rgba(0,255,0,0.01),rgba(0,0,255,0.02))] bg-[length:100%_4px,6px_100%] shadow-[inset_0_0_80px_rgba(0,0,0,0.7)]" />
-      )}
+      {scanlinesEnabled && <div className="crt-scanlines" />}
 
-      <div className="w-full max-w-7xl mx-auto p-2 sm:p-5 flex-1 flex flex-col min-w-0">
+      <div className="w-full max-w-7xl mx-auto p-2 sm:p-4 flex-1 flex flex-col">
         <div
           style={{ backgroundColor: activePalette.bgMain }}
-          className="border-3 sm:border-8 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] sm:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] flex-1 flex flex-col overflow-hidden"
+          className="border-4 sm:border-8 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] flex-1 flex flex-col"
         >
           <RetroHeader
             theme={theme}
@@ -614,32 +685,29 @@ export default function App() {
             onToggleMute={() => setIsMuted(!isMuted)}
             userStats={userStats}
             palette={activePalette}
-            onOpenCalc={() => { soundManager.playBlip(); setIsCalcModalOpen(true); }}
           />
 
-          <div className="px-3 sm:px-8 mb-4 sm:mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="px-3 sm:px-8 mb-6 flex items-center justify-between gap-4 flex-wrap">
             <button
               onClick={() => {
                 soundManager.playBlip();
                 setEditingMeal(null);
                 setIsMealModalOpen(true);
               }}
-              className="w-full sm:w-auto bg-emerald-600 border-3 sm:border-4 border-black text-white hover:bg-emerald-500 active:translate-y-1 py-3 sm:py-3.5 px-5 sm:px-7 font-bold uppercase transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-2.5 font-pixel text-xs sm:text-sm cursor-pointer"
+              className="bg-emerald-600 border-4 border-black text-white hover:bg-emerald-500 active:translate-y-1 py-3.5 px-6 font-bold uppercase transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-3 font-pixel text-xs cursor-pointer"
             >
-              <IconChefHat className="w-5 h-5 text-yellow-300 shrink-0" />
-              <span>CRAFT MEAL +</span>
+              <ChefHat className="w-5 h-5 text-yellow-300" />
+              <span>Craft Meal +</span>
             </button>
 
-            <div className="flex items-center justify-between sm:justify-end gap-2">
-              <div className="font-pixel text-[10px] sm:text-xs text-yellow-400 bg-black py-2.5 px-3 border-2 border-black flex items-center gap-2 w-full sm:w-auto justify-center">
-                <IconAward className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>LOGGED MEALS: {userStats.totalMealsLogged}</span>
-              </div>
+            <div className="font-pixel text-[10px] text-yellow-400 bg-black p-2.5 border-2 border-black flex items-center gap-2">
+              <Award className="w-4 h-4 text-emerald-400" />
+              <span>TOTAL MEALS LOGGED: {userStats.totalMealsLogged}</span>
             </div>
           </div>
 
-          <main className="flex-1 px-3 sm:px-8 pb-5 sm:pb-8 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 min-w-0">
-            <div className="lg:col-span-5 space-y-4 sm:space-y-6 flex flex-col min-w-0">
+          <main className="flex-1 px-2 sm:px-8 pb-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-5 space-y-6 flex flex-col">
               <CircularGaugeSlider
                 currentCalories={currentCalories}
                 currentProtein={currentProtein}
@@ -657,7 +725,7 @@ export default function App() {
               />
             </div>
 
-            <div className="lg:col-span-7 space-y-4 sm:space-y-6 flex flex-col min-w-0">
+            <div className="lg:col-span-7 space-y-6 flex flex-col">
               <SenseiCoach
                 currentCalories={currentCalories}
                 currentProtein={currentProtein}
@@ -672,7 +740,7 @@ export default function App() {
               <DailyLogList
                 meals={meals}
                 onDeleteMeal={handleDeleteMeal}
-                onEditMeal={(meal: any) => {
+                onEditMeal={(meal) => {
                   setEditingMeal(meal);
                   setIsMealModalOpen(true);
                 }}
@@ -682,7 +750,7 @@ export default function App() {
               <SavedMealTemplates
                 templates={templates}
                 onLogTemplate={handleLogTemplate}
-                onDeleteTemplate={(id: string) => setTemplates((prev: any[]) => prev.filter(t => t.id !== id))}
+                onDeleteTemplate={(id) => setTemplates(prev => prev.filter(t => t.id !== id))}
                 palette={activePalette}
               />
             </div>
@@ -700,24 +768,13 @@ export default function App() {
         initialMeal={editingMeal}
         customFoods={customFoods}
         deletedFoodIds={deletedFoodIds}
-        onAddCustomFood={(food: any) => setCustomFoods((prev: any[]) => [food, ...prev])}
-        onDeleteFood={(id: string, isCustom: boolean) => {
+        onAddCustomFood={(food) => setCustomFoods(prev => [food, ...prev])}
+        onDeleteFood={(id, isCustom) => {
           if (isCustom) {
-            setCustomFoods((prev: any[]) => prev.filter(f => f.id !== id));
+            setCustomFoods(prev => prev.filter(f => f.id !== id));
           } else {
-            setDeletedFoodIds((prev: string[]) => (prev.includes(id) ? prev : [...prev, id]));
+            setDeletedFoodIds(prev => (prev.includes(id) ? prev : [...prev, id]));
           }
-        }}
-        palette={activePalette}
-      />
-
-      <MacroCalculatorModal
-        isOpen={isCalcModalOpen}
-        onClose={() => setIsCalcModalOpen(false)}
-        onApplyGoals={(newGoals: any) => {
-          setGoals(newGoals);
-          soundManager.playCoin();
-          showToast("New macro goals applied!");
         }}
         palette={activePalette}
       />
@@ -733,82 +790,79 @@ function RetroHeader({
   isMuted,
   onToggleMute,
   userStats,
-  palette,
-  onOpenCalc
-}: any) {
+  palette
+}: {
+  theme: RetroTheme;
+  onThemeChange: (t: RetroTheme) => void;
+  scanlinesEnabled: boolean;
+  onToggleScanlines: () => void;
+  isMuted: boolean;
+  onToggleMute: () => void;
+  userStats: UserStats;
+  palette: ThemePalette;
+}) {
   const xpPercent = Math.min(Math.round((userStats.xp / userStats.xpToNextLevel) * 100), 100);
 
   return (
     <header
       style={{ backgroundColor: palette.headerBg }}
-      className="flex flex-col lg:flex-row lg:items-center justify-between px-3 sm:px-8 py-3 sm:py-4 border-b-3 sm:border-b-8 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] sm:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mb-4 sm:mb-6 gap-3"
+      className="flex flex-col lg:flex-row lg:items-center justify-between px-4 sm:px-8 py-4 border-b-8 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mb-6 gap-4"
     >
       <div>
-        <h1 className="text-xl sm:text-3xl font-pixel font-bold uppercase text-white tracking-tight leading-tight">
+        <h1 className="text-xl sm:text-3xl font-pixel font-bold uppercase text-white tracking-tight">
           MACRO QUEST
         </h1>
-        <div className="font-silk text-[9px] sm:text-xs text-cyan-300 font-bold mt-1">
+        <div className="font-silk text-[10px] sm:text-xs text-cyan-300 font-bold mt-1">
           CUSTOM MEALS FORGE • RPG NUTRITION
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
-        <div className="flex items-center justify-between sm:justify-start gap-2 bg-black/60 p-2 border-2 border-black">
-          <div className="flex flex-col items-start shrink-0">
-            <span className="text-[8px] sm:text-[9px] uppercase text-pink-400 font-pixel font-bold">RANK</span>
-            <span className="text-sm sm:text-lg font-retro text-white uppercase tracking-wider font-bold">
-              LVL {userStats.level}
+      <div className="flex flex-wrap items-center gap-3 sm:gap-6 justify-between lg:justify-end w-full lg:w-auto">
+        <div className="flex items-center gap-2 sm:gap-3 bg-black/60 p-2 border-2 border-black">
+          <div className="flex flex-col items-start sm:items-end shrink-0">
+            <span className="text-[9px] uppercase text-pink-400 font-pixel font-bold">PLAYER RANK</span>
+            <span className="text-base sm:text-lg font-retro text-white uppercase tracking-wider font-bold">
+              {userStats.rankTitle} LVL {userStats.level}
             </span>
           </div>
-          <div className="flex-1 sm:w-28 sm:flex-none h-4 sm:h-5 bg-black border-2 border-white p-0.5">
+          <div className="w-20 sm:w-36 h-5 sm:h-6 bg-black border-2 border-white p-0.5 shrink-0">
             <div style={{ width: `${xpPercent}%` }} className="h-full bg-emerald-500 transition-all duration-300" />
           </div>
-          
-          <div className="bg-black/80 border-2 border-pink-500 px-2 py-1 flex items-center gap-1 shrink-0">
-            <IconFlame className="w-4 h-4 text-rose-500 shrink-0" />
-            <span className="font-pixel text-xs text-pink-400 font-bold leading-none">{userStats.streakDays}</span>
+          <div className="bg-black/80 border-2 border-pink-500 px-1.5 sm:px-2 py-0.5 sm:py-1 flex items-center gap-1 shrink-0">
+            <Flame className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
+            <span className="font-pixel text-[10px] text-pink-400 font-bold">{userStats.streakDays}D STREAK</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap justify-between sm:justify-end">
-          <button
-            onClick={onOpenCalc}
-            className="flex-1 sm:flex-none pixel-btn bg-amber-600 text-white px-2.5 py-2 text-[9px] sm:text-[10px] flex items-center justify-center gap-1.5 cursor-pointer font-bold hover:bg-amber-500 border-2 border-black"
-            title="Macro Calculator Wizard"
-          >
-            <IconCalculator className="w-3.5 h-3.5" />
-            <span>WIZARD</span>
-          </button>
-
+        <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center bg-black border-2 border-black px-2 py-1">
-            <IconPalette className="w-3.5 h-3.5 text-yellow-400 mr-1.5 shrink-0" />
+            <Palette className="w-3.5 h-3.5 text-yellow-400 mr-1.5" />
             <select
               value={theme}
               onChange={(e) => {
                 soundManager.playBlip();
-                onThemeChange(e.target.value);
+                onThemeChange(e.target.value as RetroTheme);
               }}
-              className="bg-transparent text-yellow-400 font-retro text-sm sm:text-base font-bold focus:outline-none cursor-pointer"
+              className="bg-transparent text-yellow-400 font-retro text-lg font-bold focus:outline-none cursor-pointer"
             >
-              <option value="blue" className="bg-[#1a1a2e] text-white">👾 Blue</option>
-              <option value="pink" className="bg-[#3d1b3b] text-[#ff80bf]">🌸 Pink</option>
-              <option value="emerald" className="bg-[#081c15] text-[#52b788]">🐉 Emerald</option>
+              <option value="blue" className="bg-[#1a1a2e] text-white">👾 Arcade Blue</option>
+              <option value="pink" className="bg-[#3d1b3b] text-[#ff80bf]">🌸 Cute Pink</option>
             </select>
           </div>
 
           <button
             onClick={() => { soundManager.playBlip(); onToggleScanlines(); }}
-            className={`pixel-btn px-2.5 py-2 text-[9px] sm:text-[10px] flex items-center gap-1 cursor-pointer border-2 border-black ${scanlinesEnabled ? 'bg-cyan-600 text-white' : 'bg-black text-slate-400'}`}
+            className={`pixel-btn px-2.5 py-1.5 text-[9px] flex items-center gap-1 cursor-pointer ${scanlinesEnabled ? 'bg-cyan-600 text-white' : 'bg-black text-slate-400'}`}
           >
-            <IconMonitor className="w-3.5 h-3.5" />
-            <span>CRT</span>
+            <Monitor className="w-3 h-3" />
+            <span className="hidden sm:inline">CRT</span>
           </button>
           <button
             onClick={() => { onToggleMute(); soundManager.playBlip(); }}
-            className={`pixel-btn px-2.5 py-2 text-[9px] sm:text-[10px] flex items-center gap-1 cursor-pointer border-2 border-black ${!isMuted ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'}`}
+            className={`pixel-btn px-2.5 py-1.5 text-[9px] flex items-center gap-1 cursor-pointer ${!isMuted ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'}`}
           >
-            {!isMuted ? <IconVolume2 className="w-3.5 h-3.5" /> : <IconVolumeX className="w-3.5 h-3.5 text-white" />}
-            <span>{!isMuted ? 'SFX' : 'MUTED'}</span>
+            {!isMuted ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3 text-white" />}
+            <span className="hidden sm:inline">{!isMuted ? 'SFX ON' : 'MUTED'}</span>
           </button>
         </div>
       </div>
@@ -816,7 +870,19 @@ function RetroHeader({
   );
 }
 
-function CircularGaugeSlider({ currentCalories, currentProtein, goals, onUpdateGoals, palette }: any) {
+function CircularGaugeSlider({
+  currentCalories,
+  currentProtein,
+  goals,
+  onUpdateGoals,
+  palette
+}: {
+  currentCalories: number;
+  currentProtein: number;
+  goals: DailyGoals;
+  onUpdateGoals: (g: DailyGoals) => void;
+  palette: ThemePalette;
+}) {
   const [isEditingGoals, setIsEditingGoals] = useState(false);
   const [tempCalories, setTempCalories] = useState(goals.calories);
   const [tempProtein, setTempProtein] = useState(goals.protein);
@@ -832,10 +898,10 @@ function CircularGaugeSlider({ currentCalories, currentProtein, goals, onUpdateG
   return (
     <section
       style={{ backgroundColor: palette.panelBg }}
-      className="p-3.5 sm:p-6 border-3 sm:border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] relative flex flex-col items-center justify-center select-none min-w-0"
+      className="p-6 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] relative flex flex-col items-center justify-center select-none"
     >
-      <div className="w-full flex items-center justify-between border-b-2 sm:border-b-4 border-black pb-2 sm:pb-3 mb-3 sm:mb-4">
-        <h2 className="text-[10px] sm:text-sm font-pixel font-bold uppercase text-yellow-300">
+      <div className="w-full flex items-center justify-between border-b-4 border-black pb-3 mb-4">
+        <h2 className="text-xs sm:text-sm font-pixel font-bold uppercase text-yellow-300">
           CIRCULAR VISUALIZER
         </h2>
         <button
@@ -847,9 +913,9 @@ function CircularGaugeSlider({ currentCalories, currentProtein, goals, onUpdateG
             setTempFat(goals.fat);
             setIsEditingGoals(!isEditingGoals);
           }}
-          className="pixel-btn bg-black text-yellow-400 px-2.5 py-1.5 text-[9px] sm:text-[10px] flex items-center gap-1.5 border border-black cursor-pointer font-bold hover:bg-yellow-400 hover:text-black"
+          className="pixel-btn bg-black text-yellow-400 px-3 py-1.5 text-[9px] flex items-center gap-1.5 border-2 border-black cursor-pointer font-bold hover:bg-yellow-400 hover:text-black"
         >
-          <IconSettings2 className="w-3.5 h-3.5" />
+          <Settings2 className="w-3.5 h-3.5" />
           <span>{isEditingGoals ? 'CLOSE' : 'TARGETS'}</span>
         </button>
       </div>
@@ -857,55 +923,63 @@ function CircularGaugeSlider({ currentCalories, currentProtein, goals, onUpdateG
       {isEditingGoals && (
         <div
           style={{ backgroundColor: palette.subpanelBg }}
-          className="w-full border-2 sm:border-4 border-black p-3 sm:p-4 mb-3 sm:mb-4 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] text-left"
+          className="w-full border-4 border-black p-4 mb-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-left"
         >
-          <div className="flex items-center gap-1.5 mb-2.5">
-            <IconSparkles className="w-4 h-4 text-amber-400" />
-            <span className="font-pixel text-[9px] sm:text-[11px] text-yellow-300 uppercase font-bold">MANUAL TARGET CALIBRATION</span>
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles className="w-4 h-4 text-amber-400" />
+            <span className="font-pixel text-[10px] text-yellow-300 uppercase font-bold">MANUAL TARGET CALIBRATION</span>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3">
+          <div className="grid grid-cols-2 gap-3 mb-3">
             <div>
-              <label className="block text-[8px] sm:text-[10px] uppercase text-rose-400 font-pixel mb-1 font-bold">ENERGY (KCAL)</label>
+              <label className="block text-[10px] uppercase text-rose-400 font-pixel mb-1 font-bold">ENERGY (KCAL)</label>
               <input
                 type="number"
+                min="500"
+                max="10000"
                 value={tempCalories}
                 onChange={(e) => setTempCalories(Number(e.target.value))}
-                className="w-full bg-black border-2 border-black p-1.5 sm:p-2 text-base sm:text-2xl font-retro text-white font-bold"
+                className="w-full bg-black border-4 border-black p-2 text-2xl font-retro text-white font-bold"
               />
             </div>
             <div>
-              <label className="block text-[8px] sm:text-[10px] uppercase text-emerald-400 font-pixel mb-1 font-bold">PROTEIN (G)</label>
+              <label className="block text-[10px] uppercase text-emerald-400 font-pixel mb-1 font-bold">PROTEIN (G)</label>
               <input
                 type="number"
+                min="10"
+                max="500"
                 value={tempProtein}
                 onChange={(e) => setTempProtein(Number(e.target.value))}
-                className="w-full bg-black border-2 border-black p-1.5 sm:p-2 text-base sm:text-2xl font-retro text-white font-bold"
+                className="w-full bg-black border-4 border-black p-2 text-2xl font-retro text-white font-bold"
               />
             </div>
             <div>
-              <label className="block text-[8px] sm:text-[10px] uppercase text-amber-400 font-pixel mb-1 font-bold">CARBS (G)</label>
+              <label className="block text-[10px] uppercase text-amber-400 font-pixel mb-1 font-bold">CARBS (G)</label>
               <input
                 type="number"
+                min="0"
+                max="1000"
                 value={tempCarbs}
                 onChange={(e) => setTempCarbs(Number(e.target.value))}
-                className="w-full bg-black border-2 border-black p-1.5 sm:p-2 text-base sm:text-2xl font-retro text-white font-bold"
+                className="w-full bg-black border-4 border-black p-2 text-2xl font-retro text-white font-bold"
               />
             </div>
             <div>
-              <label className="block text-[8px] sm:text-[10px] uppercase text-orange-400 font-pixel mb-1 font-bold">FATS (G)</label>
+              <label className="block text-[10px] uppercase text-orange-400 font-pixel mb-1 font-bold">FATS (G)</label>
               <input
                 type="number"
+                min="0"
+                max="500"
                 value={tempFat}
                 onChange={(e) => setTempFat(Number(e.target.value))}
-                className="w-full bg-black border-2 border-black p-1.5 sm:p-2 text-base sm:text-2xl font-retro text-white font-bold"
+                className="w-full bg-black border-4 border-black p-2 text-2xl font-retro text-white font-bold"
               />
             </div>
           </div>
           <div className="flex justify-end gap-2">
             <button
               onClick={() => setIsEditingGoals(false)}
-              className="pixel-btn bg-black text-slate-300 px-3 py-1.5 text-[9px] cursor-pointer border-2 border-black"
+              className="pixel-btn bg-black text-slate-300 px-3 py-1 text-[9px] cursor-pointer"
             >
               CANCEL
             </button>
@@ -915,15 +989,15 @@ function CircularGaugeSlider({ currentCalories, currentProtein, goals, onUpdateG
                 onUpdateGoals({ calories: tempCalories, protein: tempProtein, carbs: tempCarbs, fat: tempFat });
                 setIsEditingGoals(false);
               }}
-              className="pixel-btn bg-emerald-600 text-white font-bold px-3.5 py-1.5 text-[9px] flex items-center gap-1.5 cursor-pointer border-2 border-black"
+              className="pixel-btn bg-emerald-600 text-white font-bold px-4 py-1 text-[9px] flex items-center gap-1 cursor-pointer"
             >
-              <IconCheck className="w-3.5 h-3.5" /> LOCK
+              <Check className="w-3.5 h-3.5" /> LOCK TARGETS
             </button>
           </div>
         </div>
       )}
 
-      <div className="relative w-52 h-52 xs:w-60 xs:h-60 sm:w-80 sm:h-80 max-w-full flex items-center justify-center my-2 shrink-0">
+      <div className="relative w-64 h-64 xs:w-72 xs:h-72 sm:w-80 sm:h-80 max-w-full flex items-center justify-center my-2">
         <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
           <circle cx="50" cy="50" r="44" fill="none" stroke="#000000" strokeWidth="8.5" opacity="0.6" />
           <circle
@@ -953,18 +1027,18 @@ function CircularGaugeSlider({ currentCalories, currentProtein, goals, onUpdateG
           />
         </svg>
 
-        <div className="text-center z-10 max-w-[150px] sm:max-w-[180px] px-2 flex flex-col items-center justify-center">
-          <div className="text-2xl xs:text-3xl sm:text-4xl font-bold font-retro text-white leading-none">
+        <div className="text-center z-10 max-w-[150px] px-1 flex flex-col items-center justify-center">
+          <div className="text-3xl sm:text-4xl font-bold font-retro text-white leading-none">
             {remainingCalories.toLocaleString()}
           </div>
-          <div className="text-[8px] xs:text-[9px] uppercase tracking-wider text-rose-400 font-pixel font-bold mt-1">
+          <div className="text-[8px] uppercase tracking-wider text-rose-400 font-pixel font-bold mt-1">
             KCAL LEFT
           </div>
           <div className="w-10 h-[2px] bg-slate-700 my-1.5" />
-          <div className="text-base xs:text-lg sm:text-xl font-bold font-retro text-emerald-400 leading-none whitespace-nowrap">
+          <div className="text-base sm:text-lg font-bold font-retro text-emerald-400 leading-none whitespace-nowrap">
             {Math.round(currentProtein)}g / {goals.protein}g
           </div>
-          <div className="text-[8px] xs:text-[9px] uppercase tracking-wider text-emerald-400 font-pixel font-bold mt-1 whitespace-nowrap">
+          <div className="text-[8px] uppercase tracking-wider text-emerald-400 font-pixel font-bold mt-0.5 whitespace-nowrap">
             PROTEIN ({proPercent}%)
           </div>
         </div>
@@ -973,18 +1047,32 @@ function CircularGaugeSlider({ currentCalories, currentProtein, goals, onUpdateG
   );
 }
 
-function MacroBreakdownBar({ currentCalories, currentProtein, currentCarbs, currentFat, goals, palette }: any) {
+function MacroBreakdownBar({
+  currentCalories,
+  currentProtein,
+  currentCarbs,
+  currentFat,
+  goals,
+  palette
+}: {
+  currentCalories: number;
+  currentProtein: number;
+  currentCarbs: number;
+  currentFat: number;
+  goals: DailyGoals;
+  palette: ThemePalette;
+}) {
   const renderRetroSegments = (current: number, target: number, colorHex: string) => {
     const totalBlocks = 16;
     const filledBlocks = target > 0 ? Math.min(Math.round((current / target) * totalBlocks), totalBlocks) : 0;
     const isOver = current > target;
     return (
-      <div className="flex items-center gap-[3px] bg-black p-1.5 border-2 border-black overflow-hidden">
+      <div className="flex items-center gap-[3px] bg-black p-1.5 border-2 border-black">
         {Array.from({ length: totalBlocks }).map((_, idx) => (
           <div
             key={idx}
             style={{ backgroundColor: idx < filledBlocks ? (isOver ? '#ef4444' : colorHex) : palette.subpanelBg }}
-            className="h-3 flex-1 min-w-0 transition-all duration-300"
+            className="h-3 flex-1 transition-all duration-300"
           />
         ))}
       </div>
@@ -994,30 +1082,30 @@ function MacroBreakdownBar({ currentCalories, currentProtein, currentCarbs, curr
   return (
     <div
       style={{ backgroundColor: palette.panelBg }}
-      className="p-3.5 sm:p-6 border-3 sm:border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] min-w-0"
+      className="p-6 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
     >
-      <div className="flex items-center justify-between border-b-2 sm:border-b-4 border-black pb-2 sm:pb-3 mb-3 sm:mb-4">
-        <h3 className="font-pixel text-[10px] sm:text-sm text-yellow-300 uppercase flex items-center gap-2 font-bold">
-          <span>⚔️ HERO ATTRIBUTES</span>
+      <div className="flex items-center justify-between border-b-4 border-black pb-3 mb-4">
+        <h3 className="font-pixel text-xs sm:text-sm text-yellow-300 uppercase flex items-center gap-2 font-bold">
+          <span>⚔️ HERO ATTRIBUTE STATS</span>
         </h3>
-        <span className="font-silk text-[8px] sm:text-[10px] text-cyan-300 font-bold uppercase">WARRIOR STATUS</span>
+        <span className="font-silk text-[10px] text-cyan-300 font-bold uppercase">WARRIOR STATUS</span>
       </div>
 
-      <div className="space-y-3 sm:space-y-4">
+      <div className="space-y-4">
         <div>
-          <div className="flex items-center justify-between font-pixel text-[9px] sm:text-[10px] mb-1">
-            <span className="text-rose-400 font-bold truncate">HP [CALORIES]</span>
-            <span className="font-retro text-base sm:text-2xl text-rose-400 font-bold shrink-0 ml-1">
-              {Math.round(currentCalories)} / {goals.calories} kcal
+          <div className="flex items-center justify-between font-pixel text-[10px] mb-1">
+            <span className="text-rose-400 font-bold">HP [CALORIES]</span>
+            <span className="font-retro text-2xl text-rose-400 font-bold">
+              {currentCalories} / {goals.calories} kcal
             </span>
           </div>
           {renderRetroSegments(currentCalories, goals.calories, palette.accentPink)}
         </div>
 
         <div>
-          <div className="flex items-center justify-between font-pixel text-[9px] sm:text-[10px] mb-1">
-            <span className="text-emerald-400 font-bold truncate">STR [PROTEIN]</span>
-            <span className="font-retro text-base sm:text-2xl text-emerald-400 font-bold shrink-0 ml-1">
+          <div className="flex items-center justify-between font-pixel text-[10px] mb-1">
+            <span className="text-emerald-400 font-bold">STR [PROTEIN]</span>
+            <span className="font-retro text-2xl text-emerald-400 font-bold">
               {Math.round(currentProtein)}g / {goals.protein}g
             </span>
           </div>
@@ -1025,9 +1113,9 @@ function MacroBreakdownBar({ currentCalories, currentProtein, currentCarbs, curr
         </div>
 
         <div>
-          <div className="flex items-center justify-between font-pixel text-[9px] sm:text-[10px] mb-1">
-            <span className="text-amber-400 font-bold truncate">DEX [CARBS]</span>
-            <span className="font-retro text-base sm:text-2xl text-amber-400 font-bold shrink-0 ml-1">
+          <div className="flex items-center justify-between font-pixel text-[10px] mb-1">
+            <span className="text-amber-400 font-bold">DEX [CARBS]</span>
+            <span className="font-retro text-2xl text-amber-400 font-bold">
               {Math.round(currentCarbs)}g / {goals.carbs}g
             </span>
           </div>
@@ -1035,9 +1123,9 @@ function MacroBreakdownBar({ currentCalories, currentProtein, currentCarbs, curr
         </div>
 
         <div>
-          <div className="flex items-center justify-between font-pixel text-[9px] sm:text-[10px] mb-1">
-            <span className="text-orange-400 font-bold truncate">DEF [FATS]</span>
-            <span className="font-retro text-base sm:text-2xl text-orange-400 font-bold shrink-0 ml-1">
+          <div className="flex items-center justify-between font-pixel text-[10px] mb-1">
+            <span className="text-orange-400 font-bold">DEF [FATS]</span>
+            <span className="font-retro text-2xl text-orange-400 font-bold">
               {Math.round(currentFat)}g / {goals.fat}g
             </span>
           </div>
@@ -1048,12 +1136,20 @@ function MacroBreakdownBar({ currentCalories, currentProtein, currentCarbs, curr
   );
 }
 
-function SenseiCoach({ currentCalories, currentProtein, goals, palette }: any) {
+function SenseiCoach({
+  currentCalories,
+  currentProtein,
+  goals,
+  palette
+}: {
+  currentCalories: number;
+  currentProtein: number;
+  goals: DailyGoals;
+  palette: ThemePalette;
+}) {
   const [displayedText, setDisplayedText] = useState('');
   const [fullTargetText, setFullTargetText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [userQuestion, setUserQuestion] = useState('');
-  const [isAiLoading, setIsAiLoading] = useState(false);
 
   const wisdomList = [
     "Feast on high-tier protein warrior! Grilled Chicken Breast or Salmon with White Rice grants maximum STR.",
@@ -1091,7 +1187,7 @@ function SenseiCoach({ currentCalories, currentProtein, goals, palette }: any) {
     const proPct = goals.protein > 0 ? Math.round((currentProtein / goals.protein) * 100) : 0;
     const remainingPro = Math.max(0, goals.protein - currentProtein);
 
-    let text = `📜 Quest Briefing: Consumed ${Math.round(currentCalories)} / ${goals.calories} kcal (${calPct}%). `;
+    let text = `📜 Quest Briefing: Consumed ${currentCalories} / ${goals.calories} kcal (${calPct}%). `;
     text += `Protein at ${Math.round(currentProtein)}g / ${goals.protein}g (${proPct}%). `;
     if (remainingPro > 0) {
       text += `Need ${Math.round(remainingPro)}g more protein and ${remainingCal} kcal today!`;
@@ -1107,104 +1203,81 @@ function SenseiCoach({ currentCalories, currentProtein, goals, palette }: any) {
     setFullTargetText(`🧙‍♂️ Sensei Wisdom: "${randomTip}"`);
   };
 
-  const handleAskAiSensei = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!userQuestion.trim() || isAiLoading) return;
-    soundManager.playBlip();
-    setIsAiLoading(true);
-    setFullTargetText("🧙‍♂️ Sensei is reading the cosmic macro scrolls...");
-
-    const advice = await queryGeminiSensei(userQuestion, currentCalories, currentProtein, goals);
-    setIsAiLoading(false);
-    setFullTargetText(advice);
-    setUserQuestion('');
-  };
-
   return (
     <section
       style={{ backgroundColor: palette.panelBg }}
-      className="p-3.5 sm:p-6 border-3 sm:border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex flex-col min-w-0"
+      className="p-6 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex flex-col"
     >
-      <div className="flex items-center justify-between border-b-2 sm:border-b-4 border-black pb-2 sm:pb-3 mb-3 sm:mb-4">
-        <div className="flex items-center gap-2 min-w-0">
-          <IconBot className="w-5 h-5 sm:w-6 sm:h-6 text-pink-400 shrink-0" />
-          <div className="min-w-0">
-            <h3 className="font-pixel text-[10px] sm:text-sm text-yellow-300 uppercase font-bold truncate">
-              AI SENSEI COACH
+      <div className="flex items-center justify-between border-b-4 border-black pb-3 mb-4">
+        <div className="flex items-center gap-2">
+          <Bot className="w-6 h-6 text-pink-400" />
+          <div>
+            <h3 className="font-pixel text-xs sm:text-sm text-yellow-300 uppercase font-bold">
+              SENSEI
             </h3>
-            <div className="font-mono text-[9px] sm:text-xs text-cyan-300 font-bold truncate">GEMINI POWERED</div>
+            <div className="font-mono text-xs text-cyan-300 font-bold">REAL-TIME RPG COACH</div>
           </div>
         </div>
         <button
           onClick={generateBriefing}
-          className="pixel-btn bg-black text-white border border-black px-2 sm:px-2.5 py-1 text-[8px] sm:text-[9px] flex items-center gap-1 cursor-pointer font-bold hover:bg-yellow-400 hover:text-black shrink-0"
+          className="pixel-btn bg-black text-white border-2 border-black px-2.5 py-1 text-[9px] flex items-center gap-1 cursor-pointer font-bold hover:bg-yellow-400 hover:text-black"
         >
-          <IconRefreshCw className={`w-3.5 h-3.5 ${isTyping || isAiLoading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-3 h-3 ${isTyping ? 'animate-spin' : ''}`} />
           <span>REFRESH</span>
         </button>
       </div>
 
       <div
         style={{ backgroundColor: palette.subpanelBg }}
-        className="p-2.5 sm:p-3.5 border-2 sm:border-4 border-black mb-3 flex items-start gap-3 shadow-[2px_2px_0px_0px_#000]"
+        className="p-3.5 border-4 border-black mb-4 flex items-start gap-3.5 shadow-[2px_2px_0px_0px_#000]"
       >
         <div className="flex flex-col items-center shrink-0">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-black border-2 border-pink-500 flex items-center justify-center text-xl sm:text-2xl">
+          <div className="w-12 h-12 bg-black border-2 border-pink-500 flex items-center justify-center text-2xl">
             🧙‍♂️
           </div>
           <span className="font-pixel text-[8px] text-pink-400 font-bold mt-1">SENSEI</span>
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="font-mono text-sm sm:text-lg text-white leading-relaxed min-h-[56px] sm:min-h-[64px] p-2 sm:p-2.5 bg-black border-2 border-black relative break-words">
+        <div className="flex-1">
+          <div className="font-mono text-lg text-white leading-relaxed min-h-[60px] p-2.5 bg-black border-2 border-black relative">
             {displayedText ? (
               <span>"{displayedText}"</span>
             ) : (
-              <span className="text-slate-400 italic text-sm sm:text-base">"Ask me anything about your macros or post-workout meals!"</span>
+              <span className="text-slate-400 italic">"Consult the scrolls below for your daily quest briefing!"</span>
             )}
           </div>
         </div>
       </div>
 
-      <form onSubmit={handleAskAiSensei} className="flex gap-2 mb-3">
-        <input
-          type="text"
-          placeholder="Ask Sensei: e.g. What should I eat for dinner?"
-          value={userQuestion}
-          onChange={(e) => setUserQuestion(e.target.value)}
-          className="flex-1 bg-black border-2 border-black px-3 py-2 font-retro text-base sm:text-lg text-white font-bold focus:outline-none focus:border-yellow-400"
-        />
-        <button
-          type="submit"
-          disabled={isAiLoading}
-          className="pixel-btn bg-cyan-600 text-white border-2 border-black px-3 sm:px-4 text-[9px] sm:text-[10px] font-bold flex items-center gap-1 cursor-pointer hover:bg-cyan-500 shrink-0"
-        >
-          <IconSend className="w-3.5 h-3.5" />
-          <span>ASK</span>
-        </button>
-      </form>
-
       <div className="flex flex-wrap gap-2">
         <button
           onClick={generateBriefing}
-          className="flex-1 min-w-[110px] pixel-btn bg-pink-600 text-white border-2 border-black py-2 px-2 text-[9px] sm:text-[10px] font-bold flex items-center justify-center gap-1.5 cursor-pointer hover:bg-pink-500"
+          className="flex-1 min-w-[130px] pixel-btn bg-pink-600 text-white border-2 border-black py-2.5 px-2.5 text-[9px] font-bold flex items-center justify-center gap-1.5 cursor-pointer hover:bg-pink-500"
         >
-          <IconScroll className="w-3.5 h-3.5 shrink-0" />
-          <span>BRIEFING</span>
+          <Scroll className="w-3.5 h-3.5" />
+          <span>MACRO BRIEFING</span>
         </button>
         <button
           onClick={getSenseiWisdom}
-          className="flex-1 min-w-[110px] pixel-btn bg-emerald-600 text-white border-2 border-black py-2 px-2 text-[9px] sm:text-[10px] font-bold flex items-center justify-center gap-1.5 cursor-pointer hover:bg-emerald-500"
+          className="flex-1 min-w-[130px] pixel-btn bg-emerald-600 text-white border-2 border-black py-2.5 px-2.5 text-[9px] font-bold flex items-center justify-center gap-1.5 cursor-pointer hover:bg-emerald-500"
         >
-          <IconSparkles className="w-3.5 h-3.5 shrink-0" />
-          <span>WISDOM</span>
+          <Sparkles className="w-3.5 h-3.5" />
+          <span>SENSEI WISDOM</span>
         </button>
       </div>
     </section>
   );
 }
 
-function WeeklyHistoryChart({ history, goals, palette }: any) {
-  const days = [];
+function WeeklyHistoryChart({
+  history,
+  goals,
+  palette
+}: {
+  history: Record<string, DailyHistoryRecord>;
+  goals: DailyGoals;
+  palette: ThemePalette;
+}) {
+  const days: { dateStr: string; dayLabel: string; record?: DailyHistoryRecord }[] = [];
   const today = new Date();
 
   for (let i = 6; i >= 0; i--) {
@@ -1212,23 +1285,27 @@ function WeeklyHistoryChart({ history, goals, palette }: any) {
     d.setDate(today.getDate() - i);
     const dateStr = d.toISOString().split('T')[0];
     const dayLabel = i === 0 ? 'TODAY' : d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
-    days.push({ dateStr, dayLabel, record: history[dateStr] });
+    days.push({
+      dateStr,
+      dayLabel,
+      record: history[dateStr]
+    });
   }
 
   return (
     <section
       style={{ backgroundColor: palette.panelBg }}
-      className="p-3.5 sm:p-6 border-3 sm:border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] min-w-0"
+      className="p-6 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
     >
-      <div className="flex items-center justify-between border-b-2 sm:border-b-4 border-black pb-2 sm:pb-3 mb-3 sm:mb-4">
-        <h3 className="font-pixel text-[10px] sm:text-sm text-yellow-300 font-bold uppercase flex items-center gap-2">
-          <IconBarChart3 className="w-4 h-4 text-cyan-300 shrink-0" />
-          <span>📜 7-DAY HISTORY</span>
+      <div className="flex items-center justify-between border-b-4 border-black pb-3 mb-4">
+        <h3 className="font-pixel text-xs sm:text-sm text-yellow-300 font-bold uppercase flex items-center gap-2">
+          <BarChart3 className="w-4 h-4 text-cyan-300" />
+          <span>📜 7-DAY QUEST HISTORY</span>
         </h3>
-        <span className="font-silk text-[8px] sm:text-[10px] text-cyan-300 font-bold uppercase">PAST 6D + TODAY</span>
+        <span className="font-silk text-[10px] text-cyan-300 font-bold uppercase">PAST 6 DAYS + TODAY</span>
       </div>
 
-      <div className="grid grid-cols-7 gap-1.5 sm:gap-3 items-end h-28 sm:h-40 bg-black p-2 sm:p-3 border-2 sm:border-4 border-black">
+      <div className="grid grid-cols-7 gap-1.5 sm:gap-3 items-end h-40 bg-black p-3 border-4 border-black">
         {days.map((dayItem, idx) => {
           const rec = dayItem.record;
           const calories = rec ? rec.calories : 0;
@@ -1238,19 +1315,19 @@ function WeeklyHistoryChart({ history, goals, palette }: any) {
 
           return (
             <div key={dayItem.dateStr} className="flex flex-col items-center justify-end h-full w-full group relative">
-              <div className="absolute -top-10 z-20 hidden group-hover:flex flex-col items-center bg-slate-900 border-2 border-black text-white p-1 text-[8px] sm:text-[9px] font-mono whitespace-nowrap shadow-md">
+              <div className="absolute -top-10 z-20 hidden group-hover:flex flex-col items-center bg-slate-900 border-2 border-black text-white p-1 text-[9px] font-mono whitespace-nowrap shadow-md">
                 <span>{calories} kcal</span>
                 <span className="text-emerald-400">{protein}g P</span>
               </div>
 
-              <div className="w-full bg-slate-900 border border-slate-800 h-full flex items-end">
+              <div className="w-full bg-slate-900 border-2 border-slate-800 h-full flex items-end">
                 <div
                   style={{ height: `${Math.max(heightPct, calories > 0 ? 8 : 0)}%` }}
                   className={`w-full transition-all duration-500 ${isTargetMet ? 'bg-emerald-500' : calories > 0 ? 'bg-pink-500' : 'bg-transparent'}`}
                 />
               </div>
 
-              <span className={`font-pixel text-[7px] xs:text-[8px] sm:text-[9px] mt-1.5 sm:mt-2 font-bold truncate max-w-full ${idx === 6 ? 'text-yellow-300' : 'text-slate-400'}`}>
+              <span className={`font-pixel text-[7px] sm:text-[9px] mt-2 font-bold ${idx === 6 ? 'text-yellow-300' : 'text-slate-400'}`}>
                 {dayItem.dayLabel}
               </span>
             </div>
@@ -1258,85 +1335,98 @@ function WeeklyHistoryChart({ history, goals, palette }: any) {
         })}
       </div>
 
-      <div className="flex items-center justify-between text-[8px] sm:text-[10px] font-mono text-slate-400 mt-2 flex-wrap gap-1">
+      <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 mt-2">
         <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1.5"><span className="w-3 h-3 bg-emerald-500 inline-block border border-black" /> Met</span>
-          <span className="flex items-center gap-1.5"><span className="w-3 h-3 bg-pink-500 inline-block border border-black" /> Active</span>
+          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-emerald-500 inline-block border border-black" /> Goal Met</span>
+          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-pink-500 inline-block border border-black" /> Active</span>
+          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-slate-900 inline-block border border-black" /> Empty</span>
         </div>
-        <span className="font-pixel text-[7px] sm:text-[8px] text-yellow-400">{goals.calories} KCAL / {goals.protein}G P</span>
+        <span className="font-pixel text-[8px] text-yellow-400">TARGET: {goals.calories} KCAL / {goals.protein}G P</span>
       </div>
     </section>
   );
 }
 
-function DailyLogList({ meals, onDeleteMeal, onEditMeal, onDuplicateMeal, palette }: any) {
+function DailyLogList({
+  meals,
+  onDeleteMeal,
+  onEditMeal,
+  onDuplicateMeal,
+  palette
+}: {
+  meals: CustomMeal[];
+  onDeleteMeal: (id: string) => void;
+  onEditMeal: (meal: CustomMeal) => void;
+  onDuplicateMeal: (meal: CustomMeal) => void;
+  palette: ThemePalette;
+}) {
   const [expandedMealIds, setExpandedMealIds] = useState<Record<string, boolean>>({});
 
   return (
     <section
       style={{ backgroundColor: palette.panelBg }}
-      className="p-3.5 sm:p-6 border-3 sm:border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex flex-col min-w-0"
+      className="p-6 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex flex-col"
     >
-      <div className="flex items-center justify-between border-b-2 sm:border-b-4 border-black pb-2 sm:pb-3 mb-3 sm:mb-4">
-        <h2 className="text-[10px] sm:text-sm font-pixel font-bold uppercase text-rose-400 flex items-center gap-2">
-          <IconUtensils className="w-4 h-4 text-rose-400 shrink-0" />
+      <div className="flex items-center justify-between border-b-4 border-black pb-3 mb-4">
+        <h2 className="text-xs sm:text-sm font-pixel font-bold uppercase text-rose-400 flex items-center gap-2">
+          <Utensils className="w-4 h-4 text-rose-400" />
           <span>QUEST LOG ({meals.length})</span>
         </h2>
-        <span className="font-silk text-[8px] sm:text-[10px] text-yellow-300 font-bold uppercase">ACTIVE INVENTORY</span>
+        <span className="font-silk text-[10px] text-yellow-300 font-bold uppercase">ACTIVE INVENTORY</span>
       </div>
 
       {meals.length === 0 ? (
-        <div className="p-4 sm:p-8 bg-black border-2 sm:border-4 border-black opacity-70 flex flex-col items-center justify-center min-h-[90px] border-dashed text-center">
-          <span className="text-[9px] sm:text-[11px] uppercase font-pixel text-rose-400 font-bold">INVENTORY EMPTY</span>
-          <span className="text-sm sm:text-base font-retro text-slate-300 mt-1">(Craft a meal to fuel your quest!)</span>
+        <div className="p-8 bg-black border-4 border-black opacity-70 flex flex-col items-center justify-center min-h-[120px] border-dashed">
+          <span className="text-[10px] uppercase font-pixel text-rose-400 font-bold">INVENTORY EMPTY</span>
+          <span className="text-base font-retro text-slate-300 mt-1">(Craft a meal to fuel your quest!)</span>
         </div>
       ) : (
         <div className="space-y-3">
-          {meals.map((meal: any) => {
+          {meals.map((meal) => {
             const isExpanded = !!expandedMealIds[meal.id];
             return (
-              <div key={meal.id} className="p-3 bg-black border-2 sm:border-4 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] min-w-0">
-                <div className="flex items-center justify-between mb-1.5 gap-2 flex-wrap">
-                  <span className="text-sm sm:text-base text-yellow-400 font-bold font-retro">
+              <div key={meal.id} className="p-3.5 bg-black border-4 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm text-yellow-400 font-bold font-retro">
                     {meal.category.toUpperCase()} • {meal.totalGrams}g
                   </span>
-                  <div className="flex items-center gap-1.5 ml-auto">
+                  <div className="flex items-center gap-1">
                     <button
                       onClick={() => onDuplicateMeal(meal)}
-                      className="pixel-btn bg-slate-800 text-white border border-black p-1.5 text-[8px] font-bold cursor-pointer hover:bg-emerald-600"
+                      className="pixel-btn bg-slate-800 text-white border-2 border-black px-2 py-0.5 text-[8px] font-bold cursor-pointer hover:bg-emerald-600"
                       title="Eat again"
                     >
-                      <IconCopy className="w-3.5 h-3.5" />
+                      <Copy className="w-3 h-3" />
                     </button>
                     <button
                       onClick={() => onEditMeal(meal)}
-                      className="pixel-btn bg-blue-600 text-white border border-black p-1.5 text-[8px] font-bold cursor-pointer hover:bg-blue-500"
+                      className="pixel-btn bg-blue-600 text-white border-2 border-black px-2 py-0.5 text-[8px] font-bold cursor-pointer hover:bg-blue-500"
                       title="Edit recipe"
                     >
-                      <IconEdit3 className="w-3.5 h-3.5" />
+                      <Edit3 className="w-3 h-3" />
                     </button>
                     <button
                       onClick={() => onDeleteMeal(meal.id)}
-                      className="pixel-btn bg-rose-600 text-white border border-black p-1.5 text-[8px] font-bold cursor-pointer hover:bg-rose-500"
+                      className="pixel-btn bg-rose-600 text-white border-2 border-black px-2 py-0.5 text-[8px] font-bold cursor-pointer hover:bg-rose-500"
                       title="Discard meal"
                     >
-                      <IconTrash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-3 h-3" />
                     </button>
                     <button
-                      onClick={() => setExpandedMealIds((p: any) => ({ ...p, [meal.id]: !p[meal.id] }))}
-                      className="pixel-btn bg-black text-white border border-black p-1.5 text-[8px] font-bold cursor-pointer"
+                      onClick={() => setExpandedMealIds(p => ({ ...p, [meal.id]: !p[meal.id] }))}
+                      className="pixel-btn bg-black text-white border-2 border-black px-2 py-0.5 text-[8px] font-bold cursor-pointer"
                     >
-                      {isExpanded ? <IconChevronUp className="w-3.5 h-3.5" /> : <IconChevronDown className="w-3.5 h-3.5" />}
+                      {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                     </button>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 text-base sm:text-xl font-bold text-white font-mono break-words">
+                <div className="flex items-center gap-2 text-xl font-bold text-white font-mono">
                   <span>{meal.ingredients[0]?.icon || '🍲'}</span>
-                  <span className="truncate max-w-[200px] xs:max-w-[280px] sm:max-w-none">{meal.name}</span>
+                  <span>{meal.name}</span>
                 </div>
 
-                <div className="flex justify-between text-sm sm:text-lg font-retro mt-1.5 pt-1.5 border-t border-slate-800 gap-2 flex-wrap">
+                <div className="flex justify-between text-base font-retro mt-2 pt-2 border-t-2 border-slate-800">
                   <span className="text-rose-400 font-bold">{meal.totalCalories} kcal</span>
                   <span className="text-emerald-400 font-bold">{meal.totalProtein}g P</span>
                   <span className="text-amber-400 font-bold">{meal.totalCarbs}g C</span>
@@ -1344,13 +1434,13 @@ function DailyLogList({ meals, onDeleteMeal, onEditMeal, onDuplicateMeal, palett
                 </div>
 
                 {isExpanded && (
-                  <div className="mt-2.5 pt-2 border-t border-slate-800 bg-slate-900 p-2 sm:p-2.5">
-                    <div className="font-pixel text-[8px] sm:text-[9px] text-yellow-300 font-bold mb-1.5">INGREDIENTS BREAKDOWN:</div>
+                  <div className="mt-3 pt-2 border-t-2 border-slate-800 bg-slate-900 p-2">
+                    <div className="font-pixel text-[9px] text-yellow-300 font-bold mb-2">INGREDIENTS BREAKDOWN:</div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                      {meal.ingredients.map((ing: any) => (
-                        <div key={ing.id} className="flex items-center justify-between bg-black p-1.5 border border-black">
-                          <span className="font-mono text-xs sm:text-sm text-white font-bold truncate">{ing.icon} {ing.name} ({ing.grams}g)</span>
-                          <span className="font-mono text-xs sm:text-sm text-emerald-400 font-bold ml-1.5">{ing.calories} kcal</span>
+                      {meal.ingredients.map(ing => (
+                        <div key={ing.id} className="flex items-center justify-between bg-black p-1.5 border-2 border-black">
+                          <span className="font-mono text-sm text-white font-bold truncate">{ing.icon} {ing.name} ({ing.grams}g)</span>
+                          <span className="font-mono text-sm text-emerald-400 font-bold">{ing.calories} kcal</span>
                         </div>
                       ))}
                     </div>
@@ -1365,50 +1455,60 @@ function DailyLogList({ meals, onDeleteMeal, onEditMeal, onDuplicateMeal, palett
   );
 }
 
-function SavedMealTemplates({ templates, onLogTemplate, onDeleteTemplate, palette }: any) {
+function SavedMealTemplates({
+  templates,
+  onLogTemplate,
+  onDeleteTemplate,
+  palette
+}: {
+  templates: CustomMeal[];
+  onLogTemplate: (t: CustomMeal) => void;
+  onDeleteTemplate: (id: string) => void;
+  palette: ThemePalette;
+}) {
   return (
     <section
       style={{ backgroundColor: palette.panelBg }}
-      className="p-3.5 sm:p-6 border-3 sm:border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] min-w-0"
+      className="p-6 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
     >
-      <div className="flex items-center justify-between border-b-2 sm:border-b-4 border-black pb-2 sm:pb-3 mb-3 sm:mb-4">
-        <h3 className="font-pixel text-[10px] sm:text-sm text-yellow-300 font-bold uppercase flex items-center gap-2">
-          <span>📖 RECIPE SPELLBOOK</span>
+      <div className="flex items-center justify-between border-b-4 border-black pb-3 mb-4">
+        <h3 className="font-pixel text-xs sm:text-sm text-yellow-300 font-bold uppercase flex items-center gap-2">
+          <span>📖 RECIPE SPELLBOOK (SAVED)</span>
         </h3>
-        <span className="font-silk text-[8px] sm:text-[10px] text-cyan-300 font-bold uppercase">1-CLICK CONSUME</span>
+        <span className="font-silk text-[10px] text-cyan-300 font-bold uppercase">1-CLICK CONSUME</span>
       </div>
 
       {templates.length === 0 ? (
-        <div className="p-4 sm:p-6 bg-black border-2 sm:border-4 border-black text-center text-slate-400 font-mono text-xs sm:text-sm">
+        <div className="p-6 bg-black border-4 border-black text-center text-slate-400 font-mono text-sm">
           No saved meal recipes yet. Check "Save Recipe to Spellbook" when crafting a custom meal!
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
-          {templates.map((template: any) => (
-            <div key={template.id} className="p-2.5 sm:p-3 bg-black border-2 sm:border-4 border-black flex flex-col justify-between shadow-[2px_2px_0px_0px_#000] min-w-0">
-              <div className="flex items-start justify-between gap-1.5 mb-1.5">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-xl sm:text-2xl shrink-0">{template.ingredients[0]?.icon || '🍲'}</span>
-                  <div className="min-w-0">
-                    <div className="font-mono text-sm sm:text-base font-bold text-white truncate">{template.name}</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {templates.map(template => (
+            <div key={template.id} className="p-3 bg-black border-4 border-black flex flex-col justify-between shadow-[2px_2px_0px_0px_#000]">
+              <div className="flex items-start justify-between gap-1 mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{template.ingredients[0]?.icon || '🍲'}</span>
+                  <div>
+                    <div className="font-mono text-base font-bold text-white">{template.name}</div>
                     <div className="font-retro text-sm text-slate-400">{template.ingredients.length} items ({template.totalGrams}g)</div>
                   </div>
                 </div>
-                <button onClick={() => onDeleteTemplate(template.id)} className="text-slate-400 hover:text-rose-400 p-1 cursor-pointer shrink-0">
-                  <IconTrash2 className="w-4 h-4" />
+                <button onClick={() => onDeleteTemplate(template.id)} className="text-slate-400 hover:text-rose-400 p-1 cursor-pointer">
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="flex items-center justify-between pt-1.5 sm:pt-2 border-t border-slate-800 gap-1.5">
-                <div className="font-retro text-sm sm:text-base text-slate-300 flex gap-2">
+              <div className="flex items-center justify-between pt-2 border-t-2 border-slate-800 gap-2">
+                <div className="font-retro text-base text-slate-300 flex gap-2">
                   <span className="text-rose-400 font-bold">{template.totalCalories} kcal</span>
                   <span className="text-emerald-400 font-bold">{template.totalProtein}g P</span>
                 </div>
                 <button
                   onClick={() => onLogTemplate(template)}
-                  className="pixel-btn bg-emerald-600 text-white border border-black px-2.5 py-1 text-[8px] sm:text-[9px] font-bold flex items-center gap-1 cursor-pointer hover:bg-emerald-500 shrink-0"
+                  className="pixel-btn bg-emerald-600 text-white border-2 border-black px-3 py-1 text-[8px] font-bold flex items-center gap-1 cursor-pointer hover:bg-emerald-500"
                 >
-                  <IconZap className="w-3 h-3 fill-white" /> LOG
+                  <Zap className="w-3 h-3 fill-white" /> LOG
                 </button>
               </div>
             </div>
@@ -1429,21 +1529,31 @@ function MealCreatorModal({
   onAddCustomFood,
   onDeleteFood,
   palette
-}: any) {
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSaveMeal: (meal: CustomMeal, saveAsTemplate: boolean) => void;
+  initialMeal?: CustomMeal | null;
+  customFoods: FoodItem[];
+  deletedFoodIds?: string[];
+  onAddCustomFood: (food: FoodItem) => void;
+  onDeleteFood: (id: string, isCustom?: boolean) => void;
+  palette: ThemePalette;
+}) {
   const [mealName, setMealName] = useState(initialMeal?.name || '');
-  const [category, setCategory] = useState(initialMeal?.category || 'lunch');
-  const [ingredients, setIngredients] = useState(initialMeal?.ingredients || []);
+  const [category, setCategory] = useState<MealTimeSlot>(initialMeal?.category || 'lunch');
+  const [ingredients, setIngredients] = useState<MealIngredient[]>(initialMeal?.ingredients || []);
   const [saveAsTemplate, setSaveAsTemplate] = useState(initialMeal?.isFavorite || false);
   const [searchQuery, setSearchQuery] = useState('');
   
-  const [activeTab, setActiveTab] = useState('pantry');
+  const [activeTab, setActiveTab] = useState<'pantry' | 'new_ingredient'>('pantry');
   const [newFoodName, setNewFoodName] = useState('');
-  const [newFoodCategory, setNewFoodCategory] = useState('protein');
+  const [newFoodCategory, setNewFoodCategory] = useState<FoodCategory>('protein');
   const [newFoodIcon, setNewFoodIcon] = useState('🥩');
-  const [newFoodCalories, setNewFoodCalories] = useState(150);
-  const [newFoodProtein, setNewFoodProtein] = useState(20);
-  const [newFoodCarbs, setNewFoodCarbs] = useState(5);
-  const [newFoodFat, setNewFoodFat] = useState(3);
+  const [newFoodCalories, setNewFoodCalories] = useState<number | ''>(150);
+  const [newFoodProtein, setNewFoodProtein] = useState<number | ''>(20);
+  const [newFoodCarbs, setNewFoodCarbs] = useState<number | ''>(5);
+  const [newFoodFat, setNewFoodFat] = useState<number | ''>(3);
 
   useEffect(() => {
     if (isOpen) {
@@ -1456,22 +1566,22 @@ function MealCreatorModal({
 
   if (!isOpen) return null;
 
-  const allAvailableFoods = [
+  const allAvailableFoods: FoodItem[] = [
     ...DEFAULT_FOOD_ITEMS.filter((f) => !deletedFoodIds.includes(f.id)),
     ...customFoods,
   ];
 
-  const totalGrams = ingredients.reduce((acc: number, curr: any) => acc + curr.grams, 0);
-  const totalCalories = ingredients.reduce((acc: number, curr: any) => acc + curr.calories, 0);
-  const totalProtein = Math.round(ingredients.reduce((acc: number, curr: any) => acc + curr.protein, 0) * 10) / 10;
-  const totalCarbs = Math.round(ingredients.reduce((acc: number, curr: any) => acc + curr.carbs, 0) * 10) / 10;
-  const totalFat = Math.round(ingredients.reduce((acc: number, curr: any) => acc + curr.fat, 0) * 10) / 10;
+  const totalGrams = ingredients.reduce((acc, curr) => acc + curr.grams, 0);
+  const totalCalories = ingredients.reduce((acc, curr) => acc + curr.calories, 0);
+  const totalProtein = Math.round(ingredients.reduce((acc, curr) => acc + curr.protein, 0) * 10) / 10;
+  const totalCarbs = Math.round(ingredients.reduce((acc, curr) => acc + curr.carbs, 0) * 10) / 10;
+  const totalFat = Math.round(ingredients.reduce((acc, curr) => acc + curr.fat, 0) * 10) / 10;
 
-  const handleAddFoodToRecipe = (food: any) => {
+  const handleAddFoodToRecipe = (food: FoodItem) => {
     soundManager.playBlip();
     const defaultG = food.defaultGrams || 100;
     const ratio = defaultG / 100;
-    const newIngredient = {
+    const newIngredient: MealIngredient = {
       id: 'ing-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
       foodId: food.id,
       name: food.name,
@@ -1480,34 +1590,9 @@ function MealCreatorModal({
       protein: Math.round(food.proteinPer100g * ratio * 10) / 10,
       carbs: Math.round(food.carbsPer100g * ratio * 10) / 10,
       fat: Math.round(food.fatPer100g * ratio * 10) / 10,
-      icon: food.icon,
-      c100: food.caloriesPer100g,
-      p100: food.proteinPer100g,
-      carb100: food.carbsPer100g,
-      f100: food.fatPer100g
+      icon: food.icon
     };
-    setIngredients((prev: any[]) => [...prev, newIngredient]);
-  };
-
-  const handleUpdateGrams = (ingId: string, newGrams: number) => {
-    const grams = Math.max(1, Number(newGrams) || 1);
-    setIngredients((prev: any[]) => prev.map(ing => {
-      if (ing.id !== ingId) return ing;
-      const ratio = grams / 100;
-      const c100 = ing.c100 || (ing.calories / ing.grams) * 100;
-      const p100 = ing.p100 || (ing.protein / ing.grams) * 100;
-      const carb100 = ing.carb100 || (ing.carbs / ing.grams) * 100;
-      const f100 = ing.f100 || (ing.fat / ing.grams) * 100;
-
-      return {
-        ...ing,
-        grams,
-        calories: Math.round(c100 * ratio),
-        protein: Math.round(p100 * ratio * 10) / 10,
-        carbs: Math.round(carb100 * ratio * 10) / 10,
-        fat: Math.round(f100 * ratio * 10) / 10
-      };
-    }));
+    setIngredients(prev => [...prev, newIngredient]);
   };
 
   const handleCreateNewCustomIngredient = (e: React.FormEvent) => {
@@ -1515,7 +1600,7 @@ function MealCreatorModal({
     if (!newFoodName.trim()) return;
     soundManager.playLevelUp();
 
-    const created = {
+    const created: FoodItem = {
       id: 'custom-' + Date.now(),
       name: newFoodName.trim(),
       category: newFoodCategory,
@@ -1539,7 +1624,7 @@ function MealCreatorModal({
     e.preventDefault();
     if (ingredients.length === 0) return;
     soundManager.playEat();
-    const finalMeal = {
+    const finalMeal: CustomMeal = {
       id: initialMeal?.id || 'meal-' + Date.now(),
       name: mealName.trim() || `Custom ${category.toUpperCase()} Plate`,
       category,
@@ -1562,40 +1647,40 @@ function MealCreatorModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-xs">
       <div
         style={{ backgroundColor: palette.panelBg, color: palette.textPrimary }}
-        className="w-full max-w-5xl max-h-[96vh] sm:max-h-[94vh] flex flex-col border-4 sm:border-8 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] sm:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] min-w-0"
+        className="w-full max-w-5xl max-h-[94vh] flex flex-col border-8 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
       >
         <div
           style={{ backgroundColor: palette.headerBg }}
-          className="flex items-center justify-between px-3 sm:px-6 py-2.5 sm:py-4 border-b-4 sm:border-b-8 border-black shrink-0"
+          className="flex items-center justify-between px-6 py-4 border-b-8 border-black"
         >
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <IconChefHat className="w-6 h-6 sm:w-7 sm:h-7 text-white shrink-0" />
-            <h2 className="text-xs sm:text-base font-bold font-pixel uppercase text-white truncate">CRAFT CUSTOM MEAL</h2>
+          <div className="flex items-center gap-3">
+            <ChefHat className="w-7 h-7 text-white" />
+            <h2 className="text-sm sm:text-base font-bold font-pixel uppercase text-white">CRAFT CUSTOM MEAL RECIPE</h2>
           </div>
-          <button onClick={onClose} className="pixel-btn bg-rose-600 text-white border border-black px-2.5 sm:px-3 py-1.5 text-[9px] sm:text-xs font-bold cursor-pointer shrink-0">
-            <IconX className="w-4 h-4" />
+          <button onClick={onClose} className="pixel-btn bg-rose-600 text-white border-2 border-black px-3 py-1.5 text-xs font-bold cursor-pointer">
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-3 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 min-w-0">
-          <div className="lg:col-span-7 space-y-3 sm:space-y-4 min-w-0">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-7 space-y-4">
             <div
               style={{ backgroundColor: palette.subpanelBg }}
-              className="space-y-2.5 sm:space-y-3 p-3 sm:p-4 border-2 sm:border-4 border-black"
+              className="space-y-3 p-4 border-4 border-black"
             >
               <div>
-                <label className="block text-[9px] sm:text-[10px] uppercase font-pixel font-bold text-yellow-300 mb-1">MEAL TITLE</label>
+                <label className="block text-[10px] uppercase font-pixel font-bold text-yellow-300 mb-1">MEAL TITLE</label>
                 <input
                   type="text"
                   placeholder="e.g. High Protein Chicken Bowl"
                   value={mealName}
                   onChange={(e) => setMealName(e.target.value)}
-                  className="w-full bg-black border-2 sm:border-4 border-black p-2 sm:p-2.5 text-lg sm:text-xl font-retro text-white font-bold"
+                  className="w-full bg-black border-4 border-black p-2.5 text-xl font-retro text-white font-bold"
                 />
               </div>
 
-              <div className="flex items-center justify-between bg-black border-2 border-black p-2 sm:p-2.5 flex-wrap gap-1.5">
-                <label className="flex items-center gap-2 cursor-pointer font-pixel text-[9px] sm:text-[10px] text-yellow-300 font-bold">
+              <div className="flex items-center justify-between bg-black border-2 border-black p-2.5">
+                <label className="flex items-center gap-2 cursor-pointer font-pixel text-[10px] text-yellow-300 font-bold">
                   <input
                     type="checkbox"
                     checked={saveAsTemplate}
@@ -1604,97 +1689,65 @@ function MealCreatorModal({
                   />
                   <span>SAVE RECIPE TO SPELLBOOK</span>
                 </label>
-                <span className="font-retro text-sm text-slate-400 hidden xs:inline">(Reusable template)</span>
+                <span className="font-retro text-xs text-slate-400">(Reusable 1-click template)</span>
               </div>
 
-              <div className="grid grid-cols-3 gap-1.5 sm:gap-2 pt-1">
-                <div className="bg-black p-2 text-center border border-black">
-                  <div className="text-[8px] sm:text-[10px] uppercase text-emerald-400 font-pixel font-bold">Protein</div>
-                  <div className="text-lg sm:text-xl font-retro font-bold text-white">{totalProtein}g</div>
+              <div className="grid grid-cols-3 gap-2 pt-1">
+                <div className="bg-black p-2 text-center border-2 border-black">
+                  <div className="text-[10px] uppercase text-emerald-400 font-pixel font-bold">Protein</div>
+                  <div className="text-xl font-retro font-bold text-white">{totalProtein}g</div>
                 </div>
-                <div className="bg-black p-2 text-center border border-black">
-                  <div className="text-[8px] sm:text-[10px] uppercase text-amber-400 font-pixel font-bold">Carbs</div>
-                  <div className="text-lg sm:text-xl font-retro font-bold text-white">{totalCarbs}g</div>
+                <div className="bg-black p-2 text-center border-2 border-black">
+                  <div className="text-[10px] uppercase text-amber-400 font-pixel font-bold">Carbs</div>
+                  <div className="text-xl font-retro font-bold text-white">{totalCarbs}g</div>
                 </div>
-                <div className="bg-black p-2 text-center border border-black">
-                  <div className="text-[8px] sm:text-[10px] uppercase text-orange-400 font-pixel font-bold">Fats</div>
-                  <div className="text-lg sm:text-xl font-retro font-bold text-white">{totalFat}g</div>
+                <div className="bg-black p-2 text-center border-2 border-black">
+                  <div className="text-[10px] uppercase text-orange-400 font-pixel font-bold">Fats</div>
+                  <div className="text-xl font-retro font-bold text-white">{totalFat}g</div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-black border-2 sm:border-4 border-black p-3 sm:p-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">
-                <span className="font-pixel text-[10px] sm:text-xs text-yellow-300 font-bold">ITEMS ({ingredients.length})</span>
-                <span className="font-retro text-base sm:text-lg text-rose-400 font-bold">{totalCalories} kcal Total</span>
+            <div className="bg-black border-4 border-black p-4">
+              <div className="flex items-center justify-between border-b-2 border-slate-800 pb-2 mb-2">
+                <span className="font-pixel text-xs text-yellow-300 font-bold">RECIPE INGREDIENTS ({ingredients.length})</span>
+                <span className="font-retro text-lg text-rose-400 font-bold">{totalCalories} kcal Total</span>
               </div>
-              <div className="space-y-2 max-h-[180px] sm:max-h-[220px] overflow-y-auto">
-                {ingredients.length === 0 ? (
-                  <div className="text-slate-500 font-mono text-sm text-center py-4">Add items from pantry below...</div>
-                ) : (
-                  ingredients.map((ing: any) => (
-                    <div key={ing.id} className="p-2 sm:p-2.5 bg-slate-900 border border-black flex items-center justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <span className="font-mono text-sm text-white font-bold truncate block">{ing.icon} {ing.name}</span>
-                        <span className="font-retro text-sm text-emerald-400 font-bold">{ing.calories} kcal | {ing.protein}g P</span>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          onClick={() => handleUpdateGrams(ing.id, ing.grams - 10)}
-                          className="pixel-btn bg-slate-800 text-white w-7 h-7 flex items-center justify-center p-0"
-                        >
-                          <IconMinus className="w-3 h-3" />
-                        </button>
-                        <input
-                          type="number"
-                          value={ing.grams}
-                          onChange={(e) => handleUpdateGrams(ing.id, Number(e.target.value))}
-                          className="w-14 bg-black border border-black text-center font-retro text-base text-yellow-300 font-bold py-0.5"
-                        />
-                        <span className="text-sm font-retro text-slate-400 font-bold">g</span>
-                        <button
-                          onClick={() => handleUpdateGrams(ing.id, ing.grams + 10)}
-                          className="pixel-btn bg-slate-800 text-white w-7 h-7 flex items-center justify-center p-0"
-                        >
-                          <IconPlus className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={() => setIngredients((prev: any[]) => prev.filter(i => i.id !== ing.id))}
-                          className="pixel-btn bg-rose-600 text-white p-1.5 ml-1"
-                        >
-                          <IconTrash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
+              <div className="space-y-2 max-h-[160px] overflow-y-auto">
+                {ingredients.map(ing => (
+                  <div key={ing.id} className="p-2 bg-slate-900 border-2 border-black flex items-center justify-between">
+                    <span className="font-mono text-sm text-white font-bold">{ing.icon} {ing.name} ({ing.grams}g)</span>
+                    <button onClick={() => setIngredients(prev => prev.filter(i => i.id !== ing.id))} className="pixel-btn bg-rose-600 text-white border border-black p-1 cursor-pointer">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
 
             <button
               onClick={handleSubmit}
-              className="w-full bg-emerald-600 border-3 sm:border-4 border-black p-3 sm:p-3.5 text-[10px] sm:text-xs font-bold uppercase hover:bg-emerald-500 text-white font-pixel cursor-pointer transition-colors shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
+              className="w-full bg-emerald-600 border-4 border-black p-3.5 text-xs font-bold uppercase hover:bg-emerald-500 text-white font-pixel cursor-pointer transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
             >
               LOG MEAL (+50 XP)
             </button>
           </div>
 
-          <div className="lg:col-span-5 space-y-3 min-w-0">
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-pixel text-[9px] sm:text-[10px] text-yellow-300 font-bold uppercase truncate">PANTRY</span>
-              <div className="flex border-2 border-black shrink-0">
+          <div className="lg:col-span-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="font-pixel text-[10px] text-yellow-300 font-bold uppercase">PANTRY & CUSTOM FOODS</span>
+              <div className="flex border-2 border-black">
                 <button
                   onClick={() => setActiveTab('pantry')}
-                  className={`px-2 py-1 text-[8px] font-bold font-pixel cursor-pointer ${activeTab === 'pantry' ? 'bg-yellow-400 text-black' : 'bg-black text-white'}`}
+                  className={`px-2.5 py-1 text-[8px] font-bold font-pixel cursor-pointer ${activeTab === 'pantry' ? 'bg-yellow-400 text-black' : 'bg-black text-white'}`}
                 >
                   PANTRY
                 </button>
                 <button
                   onClick={() => setActiveTab('new_ingredient')}
-                  className={`px-2 py-1 text-[8px] font-bold font-pixel flex items-center gap-1 cursor-pointer ${activeTab === 'new_ingredient' ? 'bg-yellow-400 text-black' : 'bg-black text-white'}`}
+                  className={`px-2.5 py-1 text-[8px] font-bold font-pixel flex items-center gap-1 cursor-pointer ${activeTab === 'new_ingredient' ? 'bg-yellow-400 text-black' : 'bg-black text-white'}`}
                 >
-                  <IconPlus className="w-3 h-3 text-emerald-400" />
+                  <Plus className="w-3 h-3 text-emerald-400" />
                   <span>+ CUSTOM</span>
                 </button>
               </div>
@@ -1702,29 +1755,29 @@ function MealCreatorModal({
 
             {activeTab === 'pantry' ? (
               <>
-                <div className="flex items-center bg-black border-2 sm:border-4 border-black px-2 py-1 sm:py-1.5">
-                  <IconSearch className="w-4 h-4 text-slate-400 mr-2 shrink-0" />
+                <div className="flex items-center bg-black border-4 border-black px-2 py-1">
+                  <Search className="w-4 h-4 text-slate-400 mr-2" />
                   <input
                     type="text"
-                    placeholder="Search pantry..."
+                    placeholder="Search food pantry..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-transparent font-retro text-base sm:text-lg text-white font-bold focus:outline-none"
+                    className="w-full bg-transparent font-retro text-lg text-white font-bold focus:outline-none"
                   />
                 </div>
-                <div className="grid grid-cols-1 gap-2 max-h-[260px] sm:max-h-[350px] overflow-y-auto">
-                  {filteredFoods.map((food: any) => (
-                    <div key={food.id} className="p-2 sm:p-2.5 bg-black border border-black flex items-center justify-between">
-                      <div className="min-w-0 pr-1.5">
-                        <div className="font-mono text-sm text-white font-bold truncate">{food.icon} {food.name}</div>
-                        <div className="font-retro text-sm text-slate-400">{food.caloriesPer100g} kcal/100g ({food.proteinPer100g}g P)</div>
+                <div className="grid grid-cols-1 gap-2 max-h-[350px] overflow-y-auto">
+                  {filteredFoods.map(food => (
+                    <div key={food.id} className="p-2.5 bg-black border-2 border-black flex items-center justify-between">
+                      <div>
+                        <div className="font-mono text-sm text-white font-bold">{food.icon} {food.name}</div>
+                        <div className="font-retro text-base text-slate-400">{food.caloriesPer100g} kcal / 100g ({food.proteinPer100g}g P)</div>
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <button onClick={() => onDeleteFood(food.id, food.isCustom)} className="pixel-btn bg-rose-600 text-white border border-black p-1.5 cursor-pointer">
-                          <IconTrash2 className="w-3.5 h-3.5" />
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => onDeleteFood(food.id, food.isCustom)} className="pixel-btn bg-rose-600 text-white border border-black p-1 cursor-pointer">
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                         <button onClick={() => handleAddFoodToRecipe(food)} className="pixel-btn bg-emerald-600 text-white border border-black p-1.5 cursor-pointer hover:bg-emerald-500">
-                          <IconPlus className="w-4 h-4" />
+                          <Plus className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
@@ -1732,40 +1785,40 @@ function MealCreatorModal({
                 </div>
               </>
             ) : (
-              <form onSubmit={handleCreateNewCustomIngredient} className="bg-black border-2 sm:border-4 border-black p-3 sm:p-4 space-y-3">
-                <div className="font-pixel text-[9px] sm:text-[10px] text-yellow-300 font-bold uppercase">CREATE INGREDIENT</div>
+              <form onSubmit={handleCreateNewCustomIngredient} className="bg-black border-4 border-black p-4 space-y-3">
+                <div className="font-pixel text-[10px] text-yellow-300 font-bold uppercase">CREATE CUSTOM INGREDIENT</div>
 
                 <div>
-                  <label className="block text-[8px] sm:text-[9px] font-pixel text-slate-300 mb-1">NAME</label>
+                  <label className="block text-[9px] font-pixel text-slate-300 mb-1">INGREDIENT NAME</label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Protein Bar, Milk"
+                    placeholder="e.g. Protein Bar, Almond Milk"
                     value={newFoodName}
                     onChange={(e) => setNewFoodName(e.target.value)}
-                    className="w-full bg-slate-900 border-2 border-black p-1.5 font-retro text-base sm:text-lg text-white font-bold"
+                    className="w-full bg-slate-900 border-2 border-black p-2 font-retro text-xl text-white font-bold"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[8px] sm:text-[9px] font-pixel text-slate-300 mb-1">SELECT EMOJI ICON</label>
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className="text-xl p-1.5 bg-slate-900 border-2 border-black">{newFoodIcon}</span>
+                  <label className="block text-[9px] font-pixel text-slate-300 mb-1">SELECT EMOJI ICON</label>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl p-2 bg-slate-900 border-2 border-black">{newFoodIcon}</span>
                     <input
                       type="text"
                       maxLength={2}
                       value={newFoodIcon}
                       onChange={(e) => setNewFoodIcon(e.target.value)}
-                      className="w-14 bg-slate-900 border-2 border-black p-1 text-center text-lg text-white"
+                      className="w-16 bg-slate-900 border-2 border-black p-2 text-center text-xl text-white"
                     />
                   </div>
-                  <div className="grid grid-cols-6 xs:grid-cols-8 gap-1 max-h-[70px] overflow-y-auto p-1.5 bg-slate-900 border-2 border-black">
+                  <div className="grid grid-cols-8 gap-1 max-h-[80px] overflow-y-auto p-1 bg-slate-900 border-2 border-black">
                     {POPULAR_FOOD_EMOJIS.map(emoji => (
                       <button
                         key={emoji}
                         type="button"
                         onClick={() => setNewFoodIcon(emoji)}
-                        className={`text-base p-1 hover:bg-yellow-400 hover:text-black rounded cursor-pointer ${newFoodIcon === emoji ? 'bg-yellow-400' : ''}`}
+                        className={`text-lg p-1 hover:bg-yellow-400 hover:text-black rounded cursor-pointer ${newFoodIcon === emoji ? 'bg-yellow-400' : ''}`}
                       >
                         {emoji}
                       </button>
@@ -1780,7 +1833,7 @@ function MealCreatorModal({
                       type="number"
                       value={newFoodCalories}
                       onChange={(e) => setNewFoodCalories(Number(e.target.value))}
-                      className="w-full bg-slate-900 border-2 border-black p-1 font-retro text-base text-white"
+                      className="w-full bg-slate-900 border-2 border-black p-1.5 font-retro text-lg text-white"
                     />
                   </div>
                   <div>
@@ -1789,7 +1842,7 @@ function MealCreatorModal({
                       type="number"
                       value={newFoodProtein}
                       onChange={(e) => setNewFoodProtein(Number(e.target.value))}
-                      className="w-full bg-slate-900 border-2 border-black p-1 font-retro text-base text-white"
+                      className="w-full bg-slate-900 border-2 border-black p-1.5 font-retro text-lg text-white"
                     />
                   </div>
                   <div>
@@ -1798,7 +1851,7 @@ function MealCreatorModal({
                       type="number"
                       value={newFoodCarbs}
                       onChange={(e) => setNewFoodCarbs(Number(e.target.value))}
-                      className="w-full bg-slate-900 border-2 border-black p-1 font-retro text-base text-white"
+                      className="w-full bg-slate-900 border-2 border-black p-1.5 font-retro text-lg text-white"
                     />
                   </div>
                   <div>
@@ -1807,14 +1860,14 @@ function MealCreatorModal({
                       type="number"
                       value={newFoodFat}
                       onChange={(e) => setNewFoodFat(Number(e.target.value))}
-                      className="w-full bg-slate-900 border-2 border-black p-1 font-retro text-base text-white"
+                      className="w-full bg-slate-900 border-2 border-black p-1.5 font-retro text-lg text-white"
                     />
                   </div>
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full pixel-btn bg-emerald-600 text-white py-2 text-[9px] font-bold cursor-pointer hover:bg-emerald-500"
+                  className="w-full pixel-btn bg-emerald-600 text-white p-2.5 text-[9px] font-bold cursor-pointer hover:bg-emerald-500"
                 >
                   + SAVE & ADD TO MEAL
                 </button>
@@ -1822,94 +1875,6 @@ function MealCreatorModal({
             )}
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
-
-function MacroCalculatorModal({ isOpen, onClose, onApplyGoals, palette }: any) {
-  const [weightKg, setWeightKg] = useState(75);
-  const [goalType, setGoalType] = useState('maintain');
-  const [activityLevel] = useState(1.4);
-
-  if (!isOpen) return null;
-
-  const calcBmr = Math.round(weightKg * 22);
-  const tdee = Math.round(calcBmr * activityLevel);
-
-  let targetCal = tdee;
-  if (goalType === 'cut') targetCal = Math.round(tdee * 0.8);
-  if (goalType === 'bulk') targetCal = Math.round(tdee * 1.15);
-
-  const recProtein = Math.round(weightKg * 2.2);
-  const recFat = Math.round(weightKg * 0.9);
-  const recCarbs = Math.max(50, Math.round((targetCal - (recProtein * 4 + recFat * 9)) / 4));
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-xs">
-      <div
-        style={{ backgroundColor: palette.panelBg, color: palette.textPrimary }}
-        className="w-full max-w-lg border-4 border-black p-4 sm:p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] space-y-4"
-      >
-        <div className="flex items-center justify-between border-b-2 border-black pb-2.5">
-          <div className="flex items-center gap-2">
-            <IconCalculator className="w-5 h-5 text-yellow-300" />
-            <h2 className="font-pixel text-xs sm:text-sm text-yellow-300 uppercase font-bold">MACRO WIZARD</h2>
-          </div>
-          <button onClick={onClose} className="pixel-btn bg-rose-600 text-white px-2.5 py-1 text-xs">
-            <IconX className="w-4 h-4" />
-          </button>
-        </div>
-
-        <div className="space-y-3 font-retro text-xl">
-          <div>
-            <label className="block font-pixel text-[9px] text-amber-300 mb-1">BODY WEIGHT (KG)</label>
-            <input
-              type="number"
-              value={weightKg}
-              onChange={(e) => setWeightKg(Number(e.target.value))}
-              className="w-full bg-black border-2 border-black p-2 text-white font-bold"
-            />
-          </div>
-
-          <div>
-            <label className="block font-pixel text-[9px] text-amber-300 mb-1">QUEST GOAL</label>
-            <div className="grid grid-cols-3 gap-1.5">
-              {['cut', 'maintain', 'bulk'].map(type => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => setGoalType(type)}
-                  className={`pixel-btn py-1.5 uppercase text-[9px] ${goalType === type ? 'bg-yellow-400 text-black font-bold' : 'bg-black text-white'}`}
-                >
-                  {type}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-black p-3.5 border-2 border-black space-y-1.5">
-            <div className="font-pixel text-[9px] text-emerald-400">RECOMMENDED TARGETS:</div>
-            <div className="flex justify-between text-white font-bold">
-              <span>ENERGY: <span className="text-rose-400">{targetCal} kcal</span></span>
-              <span>PROTEIN: <span className="text-emerald-400">{recProtein}g</span></span>
-            </div>
-            <div className="flex justify-between text-white font-bold">
-              <span>CARBS: <span className="text-amber-400">{recCarbs}g</span></span>
-              <span>FAT: <span className="text-orange-400">{recFat}g</span></span>
-            </div>
-          </div>
-        </div>
-
-        <button
-          onClick={() => {
-            onApplyGoals({ calories: targetCal, protein: recProtein, carbs: recCarbs, fat: recFat });
-            onClose();
-          }}
-          className="w-full pixel-btn bg-emerald-600 text-white py-2.5 text-xs font-bold"
-        >
-          APPLY WIZARD TARGETS
-        </button>
       </div>
     </div>
   );
